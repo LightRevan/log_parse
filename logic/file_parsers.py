@@ -39,12 +39,11 @@ class ContextFileParser(BaseFileParser):
     def __init__(self, *args, **kwargs):
         self._context_size = kwargs.pop('context_size', 100)
         self._buffer = collections.deque()
+        self._pending_rows = 0
 
         super(ContextFileParser, self).__init__(*args, **kwargs)
 
     def next(self):
-        pending_rows = 0
-
         while True:
             try:
                 row = self._file.next().strip()
@@ -52,21 +51,21 @@ class ContextFileParser(BaseFileParser):
                 timestamp = row_parse_result['timestamp']
 
                 if self._pattern.search(row):
-                    pending_rows = len(self._buffer) + self._context_size
-                elif len(self._buffer) == self._context_size and pending_rows == 0:
+                    self._pending_rows = len(self._buffer) + 1 + self._context_size
+                elif len(self._buffer) == self._context_size and self._pending_rows == 0:
                     self._buffer.popleft()
 
                 self._buffer.append((timestamp, row))
             except StopIteration:
-                if pending_rows:
+                if self._pending_rows:
                     pass  # file ended - fuck it, we have buffer
                 else:
                     raise StopIteration
 
-            if pending_rows:
+            if self._pending_rows:
                 try:
                     self.timestamp, self.row = self._buffer.popleft()
-                    pending_rows -= 1
+                    self._pending_rows -= 1
                     return self
                 except IndexError:
                     raise StopIteration  # buffer ended - time to go
