@@ -23,7 +23,7 @@ class FileParserTest(unittest.TestCase):
 
     def tearDown(self):
         del self.tested
-        os.remove(self.fname)
+        os.remove(self.fname)  # TODO: for some weird reason fails when test fails
 
 class SingleLineFileParserTest(FileParserTest):
     def setUp(self):

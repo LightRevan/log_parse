@@ -11,7 +11,7 @@ from row_parsers import *
 def create_file_parser(file_parser_cls, row_parser, **kwargs):
     return functools.partial(file_parser_cls, row_parser, **kwargs)
 
-class BaseParseContoller(object):
+class BaseParseContoller(object): #  TODO: test this shit
     def __init__(self, pattern):
         self.pattern = re.compile(pattern)
 
