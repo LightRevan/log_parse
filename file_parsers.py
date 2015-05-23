@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import re
+import collections
 
 class BaseFileParser(object):
     def __init__(self, row_parser, file_name, pattern):
-        self.file = open(file_name, 'r')
-        self.pattern = pattern
-        self.row_parser = row_parser
+        self._file = open(file_name, 'r')
+        self._pattern = pattern
+        self._row_parser = row_parser
         self.timestamp = None
         self.row = None
 
@@ -25,20 +25,38 @@ class BaseFileParser(object):
     def next(self):
         raise StopIteration
 
-class SimpleFileParser(BaseFileParser):
+class SingleLineFileParser(BaseFileParser):
     def next(self):
         # as file stops so should we
         while True:
-            self.row = self.file.next()
-            if self.pattern.find(self.row):
-                row_parse_result = self.row_parser.parse_row(self.row)
+            self.row = self._file.next()
+            if self._pattern.find(self.row):
+                row_parse_result = self._row_parser.parse_row(self.row)
                 self.timestamp = row_parse_result['timestamp']
                 return self
 
-class BufferedFileParser(BaseFileParser):
-    def __init__(self, *args):
-        super(BufferedFileParser, self).__init__(self, *args)
-        self._buffered_rows = []
+class ContextFileParser(BaseFileParser):
+    def __init__(self, *args, **kwargs):
+        self._context_size = kwargs.pop('context_size', 100)
+        self._buffer = collections.deque()
+
+        super(ContextFileParser, self).__init__(self, *args, **kwargs)
 
     def next(self):
-        pass
+        while True:
+            row = self._file.next()
+            row_parse_result = self._row_parser.parse_row(self.row)
+            timestamp = row_parse_result['timestamp']
+
+            if self._pattern.find(self.row):
+                pass
+            elif len(self._buffer) == self._context_size:
+                self._buffer.popleft()
+
+            self._buffer.append((timestamp, row))
+
+            self.timestamp, self.row = self._buffer.popleft()
+            return self
+
+
+
