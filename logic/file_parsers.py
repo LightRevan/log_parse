@@ -59,6 +59,7 @@ class ContextCommonBufferFileParser(ContextFileParser):
 
         self._buffer = collections.deque()
         self._pending_rows = 0
+        self._file_ended = False
 
     def next(self):
         while True:
@@ -71,8 +72,9 @@ class ContextCommonBufferFileParser(ContextFileParser):
 
                 self._add_to_buffer(row_params, row)
             except StopIteration:
+                self._file_ended = True
                 if not self._pending_rows:
-                    raise StopIteration  # no more file or buffer
+                    raise StopIteration  # no more file and dont need anything else
 
             if len(self._buffer) > self._context_size or self._pending_rows:
                 try:
@@ -80,7 +82,8 @@ class ContextCommonBufferFileParser(ContextFileParser):
                     if self._pending_rows and self._output(*buffered_row):
                         return self
                 except IndexError:
-                    raise StopIteration  # buffer ended - time to go
+                    if self._file_ended:
+                        raise StopIteration  # no more file or buffer
 
 
 class SimpleContextFileParser(ContextCommonBufferFileParser):
@@ -122,6 +125,42 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
             self.timestamp, self.row = timestamp, row
             return True
+
+        return False
+
+
+class SingleThreadContextFileParser(ContextCommonBufferFileParser):
+    def __init__(self, *args, **kwargs):
+        super(SingleThreadContextFileParser, self).__init__(*args, **kwargs)
+        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+
+        self._thread = None
+
+    def _init_output(self, row_params):
+        if self._thread is None or row_params['thread'] == self._thread:
+            self._thread = row_params['thread']
+
+            valid_rows_num = 0
+            for _, thread, _ in self._buffer:
+                if thread == self._thread:
+                    valid_rows_num += 1
+
+            self._pending_rows = valid_rows_num + 1 + self._context_size
+
+    def _add_to_buffer(self, row_params, row):
+        if self._thread is None or row_params['thread'] == self._thread:
+            self._buffer.append((row_params['timestamp'],
+                                 row_params['thread'],
+                                 row))
+
+    def _output(self, timestamp, thread, row):
+        if thread == self._thread:
+            self.timestamp, self.row = timestamp, row
+            self._pending_rows -= 1
+
+            return True
+
+        return False
 
 
 class MultiThreadContextFileParser(ContextFileParser):
