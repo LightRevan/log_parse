@@ -240,6 +240,7 @@ class ThreadCommonBufferParserTest(FileParserTest):
             8 T2 a
             9 T2 a
             10 T1 a
+            11 T2 abcd
             '''.strip()
         contents = '\n'.join([row.strip() for row in contents.split('\n')])
         f.write(contents)
@@ -249,7 +250,11 @@ class ThreadCommonBufferParserTest(FileParserTest):
         results = [(res.timestamp, res.row) for res in self.tested]
         required_results = [(2, '2 T1 b'),
                             (5, '5 T1 abcd'),
-                            (6, '6 T1 e')]
+                            (6, '6 T1 e'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
 
         self.assertEqual(results, required_results)
 
@@ -259,7 +264,12 @@ class ThreadCommonBufferParserTest(FileParserTest):
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (5, '5 T1 abcd'),
-                            (6, '6 T1 e')]
+                            (6, '6 T1 e'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
 
         self.assertEqual(results, required_results)
 
@@ -270,9 +280,14 @@ class ThreadCommonBufferParserTest(FileParserTest):
                             (2, '2 T1 b'),
                             (5, '5 T1 abcd'),
                             (6, '6 T1 e'),
-                            (10, '10 T1 a')]
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
 
         self.assertEqual(results, required_results)
+
 
 if __name__ == '__main__':
     unittest.main()
