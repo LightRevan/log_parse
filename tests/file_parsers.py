@@ -291,5 +291,12 @@ class ThreadCommonBufferParserTest(FileParserTest):
         self.assertEqual(results, required_results)
 
 
+class MultiThreadParserTest(ThreadCommonBufferParserTest):
+    def setUp(self):
+        super(MultiThreadParserTest, self).setUp()
+
+        row_parser = ThreadRowParser('^\d+', 'T\d+')
+        self.tested = MultiThreadContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+
 if __name__ == '__main__':
     unittest.main()
