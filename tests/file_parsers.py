@@ -356,12 +356,78 @@ class SingleThreadParserTest(FileParserTest):
         self.assertEqual(results, required_results)
 
 
-class MultiThreadParserTest(ThreadCommonBufferParserTest):
+class MultiThreadParserTest(FileParserTest):
     def setUp(self):
         super(MultiThreadParserTest, self).setUp()
 
         row_parser = ThreadRowParser('^\d+', 'T\d+')
         self.tested = MultiThreadContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+
+    def fill_file(self, f):
+        contents = '''
+            1 T1 a
+            2 T1 b
+            3 T2 c
+            4 T2 d
+            5 T1 abcd
+            6 T1 e
+            7 T2 f
+            8 T2 a
+            9 T2 a
+            10 T1 a
+            11 T2 abcd
+            '''.strip()
+        contents = '\n'.join([row.strip() for row in contents.split('\n')])
+        f.write(contents)
+
+    def test_parsing_c3(self):
+        self.tested.set_context_size(3)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (10, '10 T1 a'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c4(self):
+        self.tested.set_context_size(4)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (10, '10 T1 a'),
+                            (4, '4 T2 d'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c5(self):
+        self.tested.set_context_size(5)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (10, '10 T1 a'),
+                            (3, '3 T2 c'),
+                            (4, '4 T2 d'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
 
 if __name__ == '__main__':
     unittest.main()

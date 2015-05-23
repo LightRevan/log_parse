@@ -49,7 +49,6 @@ class ContextFileParser(BaseFileParser):
 
     def set_context_size(self, context_size):
         if self._context_size != context_size:
-            assert len(self._buffer) == 0, 'Parsing is in progress, cannot change context size'
             assert context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
 
             self._context_size = context_size
@@ -61,6 +60,11 @@ class ContextCommonBufferFileParser(ContextFileParser):
         self._buffer = collections.deque()
         self._pending_rows = 0
         self._file_ended = False
+
+    def set_context_size(self, context_size):
+        if self._context_size != context_size:
+            assert len(self._buffer) == 0, 'Parsing is in progress, cannot change context size'
+            super(ContextCommonBufferFileParser, self).set_context_size(context_size)
 
     def next(self):
         while True:
@@ -130,7 +134,7 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
 
 class SingleThreadContextFileParser(ContextCommonBufferFileParser):
     def __init__(self, *args, **kwargs):
-        self._thread = kwargs.pop('thread')
+        self._thread = kwargs.pop('thread', None)
 
         super(SingleThreadContextFileParser, self).__init__(*args, **kwargs)
         assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
@@ -161,26 +165,32 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
 
 
 class ThreadBuffer(object):
-    def __init__(self, thread, context_size):
+    def __init__(self, context_size):
         self.timestamp = None
-        self.pending_rows = 0
+        self._pending_rows = 0
         self._context_size = context_size
         self._buffer = collections.deque()
 
     def init_output(self):
-        self.pending_rows = len(self._buffer) + 1 + self._context_size
+        self._pending_rows = len(self._buffer) + 1 + self._context_size
+
+    def output_ready(self):
+        return len(self._buffer) and self._pending_rows
 
     def push(self, timestamp, row):
         if self.timestamp is None:
             self.timestamp = timestamp
 
         self._buffer.append((timestamp, row))
-        if not self.pending_rows:
+        if not self._pending_rows and len(self._buffer) > self._context_size:
             self._buffer.popleft()
 
     def pop(self):
         buffer_elem = self._buffer.popleft()
-        self.timestamp = self._buffer[0][0]
+
+        self.timestamp = self._buffer[0][0] if len(self._buffer) else None
+        self._pending_rows -= 1
+
         return buffer_elem
 
     def __cmp__(self, other):
@@ -195,7 +205,6 @@ class MultiThreadContextFileParser(ContextFileParser):
         assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
 
         self._thread_buffers = {}
-        self._buffer_heap = []
         self._file_ended = False
 
     def next(self):
@@ -203,27 +212,23 @@ class MultiThreadContextFileParser(ContextFileParser):
             try:
                 row = self._file.next().strip()
                 row_params = self._row_parser.parse_row(row)
-
                 thread = row_params['thread']
+
                 thread_buffer = self._thread_buffers.get(thread)
                 if not thread_buffer:
-                    thread_buffer = ThreadBuffer(thread, self._context_size)
+                    thread_buffer = ThreadBuffer(self._context_size)
                     self._thread_buffers[thread] = thread_buffer
 
                 if self._pattern.search(row):
                     thread_buffer.init_output()
 
-                thread_buffer.add(row_params['timestamp'], row)
+                thread_buffer.push(row_params['timestamp'], row)
             except StopIteration:
                 self._file_ended = True
-                for thread_buffer in self._thread_buffers.values():
-                    if thread_buffer.pending_rows:
-                        break
-                else:
-                    raise StopIteration
 
-            thread_buffer = min((b for b in self._thread_buffers if b.pending_rows))
-            if thread_buffer:
+            ready_buffers = [b for b in self._thread_buffers.values() if b.output_ready()]
+            if len(ready_buffers):
+                thread_buffer = min(ready_buffers)
                 self.timestamp, self.row = thread_buffer.pop()
                 return self
             elif self._file_ended:
