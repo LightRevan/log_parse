@@ -6,8 +6,8 @@ import tempfile
 import os
 import re
 
-from logic.file_parsers import *
-from logic.row_parsers import *
+from log_parse.file_parsers import *
+from log_parse.row_parsers import *
 
 
 class FileParserTest(unittest.TestCase):
