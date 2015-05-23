@@ -2,6 +2,8 @@
 __author__ = 'lightrevan'
 
 import collections
+from row_parsers import *
+
 
 class BaseFileParser(object):
     def __init__(self, row_parser, file_name, pattern):
@@ -25,6 +27,7 @@ class BaseFileParser(object):
     def next(self):
         raise StopIteration
 
+
 class SingleLineFileParser(BaseFileParser):
     def next(self):
         # as file stops so should we
@@ -35,15 +38,16 @@ class SingleLineFileParser(BaseFileParser):
                 self.timestamp = row_parse_result['timestamp']
                 return self
 
+
 class ContextFileParser(BaseFileParser):
     def __init__(self, *args, **kwargs):
         self._context_size = kwargs.pop('context_size', 100)
         assert self._context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
 
+        super(ContextFileParser, self).__init__(*args, **kwargs)
+
         self._buffer = collections.deque()
         self._pending_rows = 0
-
-        super(ContextFileParser, self).__init__(*args, **kwargs)
 
     def set_context_size(self, context_size):
         if self._context_size != context_size:
@@ -56,8 +60,8 @@ class ContextFileParser(BaseFileParser):
         while True:
             try:
                 row = self._file.next().strip()
-                row_parse_result = self._row_parser.parse_row(row)
-                timestamp = row_parse_result['timestamp']
+                row_params = self._row_parser.parse_row(row)
+                timestamp = row_params['timestamp']
 
                 if self._pattern.search(row):
                     self._pending_rows = len(self._buffer) + 1 + self._context_size
@@ -79,15 +83,40 @@ class ContextFileParser(BaseFileParser):
                 except IndexError:
                     raise StopIteration  # buffer ended - time to go
 
-class ThreadContextFileParser(ContextFileParser):
+
+class ThreadContextCommonBufferFileParser(ContextFileParser):
     def __init__(self, *args, **kwargs):
-        self._context_size = kwargs.pop('context_size', 100)
-        assert self._context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
+        super(ThreadContextCommonBufferFileParser, self).__init__(*args, **kwargs)
+        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
 
-        self._buffer = collections.deque()
-        self._pending_rows = 0
-
-        BaseFileParser.__init__(self, *args, **kwargs)
+        self._looked_up_threads = set()
 
     def next(self):
-        pass
+        while True:
+            try:
+                row = self._file.next().strip()
+                row_params = self._row_parser.parse_row(row)
+                timestamp = row_params['timestamp']
+                thread = row_params['thread']
+
+                if self._pattern.search(row):
+                    self._pending_rows = len(self._buffer) + 1 + self._context_size
+                    self._looked_up_threads.add(thread)
+                elif len(self._buffer) == self._context_size and self._pending_rows == 0:
+                    self._buffer.popleft()
+
+                self._buffer.append((timestamp, thread, row))
+            except StopIteration:
+                if self._pending_rows:
+                    pass  # file ended - fuck it, we have buffer
+                else:
+                    raise StopIteration
+
+            if self._pending_rows:
+                try:
+                    self.timestamp, thread, self.row = self._buffer.popleft()
+                    self._pending_rows -= 1
+                    if thread in self._looked_up_threads:
+                        return self
+                except IndexError:
+                    raise StopIteration  # buffer ended - time to go
