@@ -306,6 +306,9 @@ class SingleThreadParserTest(FileParserTest):
             5 T1 abcd
             6 T1 e
             7 T2 f
+            7 T3 a
+            7 T3 a
+            7 T3 a
             8 T2 a
             9 T2 a
             10 T1 a
@@ -371,6 +374,9 @@ class MultiThreadParserTest(FileParserTest):
             4 T2 d
             5 T1 abcd
             6 T1 e
+            7 T3 a
+            7 T3 a
+            7 T3 a
             7 T2 f
             8 T2 a
             9 T2 a
@@ -379,6 +385,31 @@ class MultiThreadParserTest(FileParserTest):
             '''.strip()
         contents = '\n'.join([row.strip() for row in contents.split('\n')])
         f.write(contents)
+
+    def test_parsing_c1(self):
+        self.tested.set_context_size(1)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c2(self):
+        self.tested.set_context_size(2)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (10, '10 T1 a'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
 
     def test_parsing_c3(self):
         self.tested.set_context_size(3)

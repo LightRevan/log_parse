@@ -200,11 +200,13 @@ class ThreadBuffer(object):
 
 
 class MultiThreadContextFileParser(ContextFileParser):
+    # TODO: think really hard about sequence of threads in output
     def __init__(self, *args, **kwargs):
         super(MultiThreadContextFileParser, self).__init__(*args, **kwargs)
         assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
 
         self._thread_buffers = {}
+        self._buffer_heap = []
         self._file_ended = False
 
     def next(self):
@@ -219,17 +221,22 @@ class MultiThreadContextFileParser(ContextFileParser):
                     thread_buffer = ThreadBuffer(self._context_size)
                     self._thread_buffers[thread] = thread_buffer
 
+                was_not_ready = not thread_buffer.output_ready()
                 if self._pattern.search(row):
                     thread_buffer.init_output()
-
                 thread_buffer.push(row_params['timestamp'], row)
+                is_ready = thread_buffer.output_ready()
+
+                if is_ready and was_not_ready:
+                    heapq.heappush(self._buffer_heap, thread_buffer)
             except StopIteration:
                 self._file_ended = True
 
-            ready_buffers = [b for b in self._thread_buffers.values() if b.output_ready()]
-            if len(ready_buffers):
-                thread_buffer = min(ready_buffers)
+            if len(self._buffer_heap):
+                thread_buffer = heapq.heappop(self._buffer_heap)
                 self.timestamp, self.row = thread_buffer.pop()
+                if thread_buffer.output_ready():
+                    heapq.heappush(self._buffer_heap, thread_buffer)
                 return self
             elif self._file_ended:
                 raise StopIteration
