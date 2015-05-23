@@ -2,6 +2,7 @@
 __author__ = 'lightrevan'
 
 import collections
+import heapq
 from row_parsers import *
 
 
@@ -96,7 +97,6 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
     def _output(self, timestamp, row):
         self.timestamp, self.row = timestamp, row
         self._pending_rows -= 1
-
         return True
 
 
@@ -125,7 +125,6 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
             self.timestamp, self.row = timestamp, row
             return True
-
         return False
 
 
@@ -157,18 +156,75 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
         if thread == self._thread:
             self.timestamp, self.row = timestamp, row
             self._pending_rows -= 1
-
             return True
-
         return False
+
+
+class ThreadBuffer(object):
+    def __init__(self, thread, context_size):
+        self.timestamp = None
+        self.pending_rows = 0
+        self._context_size = context_size
+        self._buffer = collections.deque()
+
+    def init_output(self):
+        self.pending_rows = len(self._buffer) + 1 + self._context_size
+
+    def push(self, timestamp, row):
+        if self.timestamp is None:
+            self.timestamp = timestamp
+
+        self._buffer.append((timestamp, row))
+        if not self.pending_rows:
+            self._buffer.popleft()
+
+    def pop(self):
+        buffer_elem = self._buffer.popleft()
+        self.timestamp = self._buffer[0][0]
+        return buffer_elem
+
+    def __cmp__(self, other):
+        if not isinstance(other, ThreadBuffer):
+            raise TypeError('Trying to compare ThreadBuffer object with something else: %s' % type(other))
+        return cmp(self.timestamp, other.timestamp)
 
 
 class MultiThreadContextFileParser(ContextFileParser):
     def __init__(self, *args, **kwargs):
         super(MultiThreadContextFileParser, self).__init__(*args, **kwargs)
+        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
 
-        self._buffer = collections.deque()
-        self._pending_rows = 0
+        self._thread_buffers = {}
+        self._buffer_heap = []
+        self._file_ended = False
 
     def next(self):
-        pass
+        while True:
+            try:
+                row = self._file.next().strip()
+                row_params = self._row_parser.parse_row(row)
+
+                thread = row_params['thread']
+                thread_buffer = self._thread_buffers.get(thread)
+                if not thread_buffer:
+                    thread_buffer = ThreadBuffer(thread, self._context_size)
+                    self._thread_buffers[thread] = thread_buffer
+
+                if self._pattern.search(row):
+                    thread_buffer.init_output()
+
+                thread_buffer.add(row_params['timestamp'], row)
+            except StopIteration:
+                self._file_ended = True
+                for thread_buffer in self._thread_buffers.values():
+                    if thread_buffer.pending_rows:
+                        break
+                else:
+                    raise StopIteration
+
+            thread_buffer = min((b for b in self._thread_buffers if b.pending_rows))
+            if thread_buffer:
+                self.timestamp, self.row = thread_buffer.pop()
+                return self
+            elif self._file_ended:
+                raise StopIteration
