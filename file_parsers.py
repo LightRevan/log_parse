@@ -11,6 +11,7 @@ class BaseFileParser(object):
         self.row = None
 
     def __del__(self):
+        # TODO: test that it really works
         self.file.close()
 
     def __cmp__(self, other):
@@ -26,12 +27,13 @@ class BaseFileParser(object):
 
 class SimpleFileParser(BaseFileParser):
     def next(self):
-        # as file fail so should we
-        self.row = self.file.next()
-        if self.pattern.find(self.row):
-            row_parse_result = self.row_parser.parse_row(self.row)
-            self.timestamp = row_parse_result['timestamp']
-            return self
+        # as file stops so should we
+        while True:
+            self.row = self.file.next()
+            if self.pattern.find(self.row):
+                row_parse_result = self.row_parser.parse_row(self.row)
+                self.timestamp = row_parse_result['timestamp']
+                return self
 
 class BufferedFileParser(BaseFileParser):
     def __init__(self, *args):
