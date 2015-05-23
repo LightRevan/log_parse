@@ -19,7 +19,8 @@ class FileParserTest(unittest.TestCase):
             self.fill_file(f)
 
     def tearDown(self):
-        os.remove(self.fname)
+        if os.path.exists(self.fname):
+            os.remove(self.fname)
 
     def fill_file(self, f):
         contents = '''
@@ -38,6 +39,7 @@ class FileParserTest(unittest.TestCase):
             13 abcd
             14 a
             '''.strip()
+        contents = '\n'.join([row.strip() for row in contents.split('\n')])
         f.write(contents)
 
 class SingleLineFileParserTest(FileParserTest):
@@ -48,7 +50,12 @@ class SingleLineFileParserTest(FileParserTest):
         self.tested = SingleLineFileParser(row_parser, self.fname, self.pattern)
 
     def test_parsing(self):
-        results = []
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(5, '5 abcd'),
+                            (8, '8 abcd'),
+                            (13, '13 abcd')]
+
+        self.assertEqual(results, required_results)
 
 class ContextFileParserTest(FileParserTest):
     def setUp(self):

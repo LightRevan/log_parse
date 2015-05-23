@@ -30,8 +30,8 @@ class SingleLineFileParser(BaseFileParser):
     def next(self):
         # as file stops so should we
         while True:
-            self.row = self._file.next()
-            if self._pattern.find(self.row):
+            self.row = self._file.next().strip()
+            if self._pattern.search(self.row):
                 row_parse_result = self._row_parser.parse_row(self.row)
                 self.timestamp = row_parse_result['timestamp']
                 return self
@@ -48,11 +48,11 @@ class ContextFileParser(BaseFileParser):
 
         while True:
             try:
-                row = self._file.next()
-                row_parse_result = self._row_parser.parse_row(self.row)
+                row = self._file.next().strip()
+                row_parse_result = self._row_parser.parse_row(row)
                 timestamp = row_parse_result['timestamp']
 
-                if self._pattern.find(self.row):
+                if self._pattern.find(row):
                     pending_rows = len(self._buffer) + self._context_size
                 elif len(self._buffer) == self._context_size and pending_rows == 0:
                     self._buffer.popleft()
