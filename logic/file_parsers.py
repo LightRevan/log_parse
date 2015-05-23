@@ -84,7 +84,7 @@ class ContextCommonBufferFileParser(ContextFileParser):
             if len(self._buffer) > self._context_size or self._pending_rows:
                 try:
                     buffered_row = self._buffer.popleft()
-                    if self._pending_rows and self._output(*buffered_row):
+                    if self._pending_rows and self._prepare_output(*buffered_row):
                         return self
                 except IndexError:
                     if self._file_ended:
@@ -98,7 +98,7 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
     def _add_to_buffer(self, row_params, row):
         self._buffer.append((row_params['timestamp'], row))
 
-    def _output(self, timestamp, row):
+    def _prepare_output(self, timestamp, row):
         self.timestamp, self.row = timestamp, row
         self._pending_rows -= 1
         return True
@@ -123,7 +123,7 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
                              row))
         self._current_row_number += 1
 
-    def _output(self, row_number, timestamp, thread, row):
+    def _prepare_output(self, row_number, timestamp, thread, row):
         self._pending_rows -= 1
         thread_row_number = self._looked_up_threads.get(thread, None)
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
@@ -156,7 +156,7 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
                                  row_params['thread'],
                                  row))
 
-    def _output(self, timestamp, thread, row):
+    def _prepare_output(self, timestamp, thread, row):
         if thread == self._thread:
             self.timestamp, self.row = timestamp, row
             self._pending_rows -= 1
