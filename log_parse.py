@@ -12,17 +12,20 @@ class BaseMultiFileParser(object):
     def parse(self, file_names):
         parsers = []
         for file_name in file_names:
-            parser = BaseFileParser(file_name, self.pattern)
-            parser.fetch_next_row()
-            parsers.append(parser)
+            parser_ = BaseFileParser(file_name, self.pattern)
+            parser_.next()
+            parsers.append(parser_)
 
         heapq.heapify(parsers)
         while parsers:
-            parser = heapq.heappop(parsers)
+            parser_ = heapq.heappop(parsers)
 
-            if parser.fetch_next_row():
-                self.output(parser.row)
-                heapq.heappush(parsers, parser)
+            try:
+                parser_.next()
+                self.output(parser_.row)
+                heapq.heappush(parsers, parser_)
+            except StopIteration:
+                pass
 
     def output(self, row):
         print row

@@ -17,8 +17,11 @@ class BaseFileParser(object):
             raise TypeError('Trying to compare FileParser object with something else: %s' % type(other))
         return cmp(self.timestamp, other.timestamp)
 
-    def fetch_next_row(self):
-        return False
+    def __iter__(self):
+        return self
+
+    def next(self):
+        raise StopIteration
 
     def parse_row(self):
         pass
@@ -28,15 +31,12 @@ class SimpleFileParser(BaseFileParser):
         super(SimpleFileParser, self).__init__(self, *args)
         self.timestamp_pattern = re.compile('^\d+')
 
-    def fetch_next_row(self):
-        try:
-            while True:
-                self.row = self.file.next()
-                if self.pattern.find(self.row):
-                    self.parse_row()
-                    return True
-        except StopIteration:
-            return False
+    def next(self):
+        # as fail stops so should we
+        self.row = self.file.next()
+        if self.pattern.find(self.row):
+            self.parse_row()
+            return self
 
     def parse_row(self):
         self.timestamp = int(self.timestamp_pattern.search(self.row).group(0))
