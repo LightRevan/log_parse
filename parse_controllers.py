@@ -11,7 +11,7 @@ from row_parsers import *
 def create_file_parser(file_parser_cls, row_parser, **kwargs):
     return functools.partial(file_parser_cls, row_parser, **kwargs)
 
-class BaseMultiFileParser(object):
+class BaseParseContoller(object):
     def __init__(self, pattern):
         self.pattern = re.compile(pattern)
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     parser_creator = create_file_parser(SingleLineFileParser, SimpleRowParser('^\d+'))
-    parser = BaseMultiFileParser(args.pattern)
+    parser = BaseParseContoller(args.pattern)
 
     parser.parse(args.file_names, parser_creator)
 
