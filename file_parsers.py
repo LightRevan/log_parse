@@ -3,9 +3,10 @@
 import re
 
 class BaseFileParser(object):
-    def __init__(self, file_name, pattern):
+    def __init__(self, file_name, pattern, row_parser):
         self.file = open(file_name, 'r')
         self.pattern = pattern
+        self.row_parser = row_parser
         self.timestamp = None
         self.row = None
 
@@ -23,16 +24,9 @@ class BaseFileParser(object):
     def next(self):
         raise StopIteration
 
-    def parse_row(self):
-        pass
-
 class SimpleFileParser(BaseFileParser):
-    def __init__(self, *args):
-        super(SimpleFileParser, self).__init__(self, *args)
-        self.timestamp_pattern = re.compile('^\d+')
-
     def next(self):
-        # as fail stops so should we
+        # as file fail so should we
         self.row = self.file.next()
         if self.pattern.find(self.row):
             self.parse_row()
@@ -46,3 +40,8 @@ class BufferedFileParser(BaseFileParser):
         super(BufferedFileParser, self).__init__(self, *args)
         self._buffered_rows = []
 
+    def next(self):
+        pass
+
+    def parse_row(self):
+        pass

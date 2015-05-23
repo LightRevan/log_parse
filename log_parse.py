@@ -3,7 +3,8 @@
 import argparse
 import heapq
 
-from parsers import *
+from file_parsers import *
+from row_parsers import *
 
 class BaseMultiFileParser(object):
     def __init__(self, pattern):
