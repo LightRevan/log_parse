@@ -79,5 +79,15 @@ class ContextFileParser(BaseFileParser):
                 except IndexError:
                     raise StopIteration  # buffer ended - time to go
 
+class ThreadContextFileParser(ContextFileParser):
+    def __init__(self, *args, **kwargs):
+        self._context_size = kwargs.pop('context_size', 100)
+        assert self._context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
 
+        self._buffer = collections.deque()
+        self._pending_rows = 0
 
+        BaseFileParser.__init__(self, *args, **kwargs)
+
+    def next(self):
+        pass
