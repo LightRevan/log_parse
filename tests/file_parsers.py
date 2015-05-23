@@ -25,6 +25,13 @@ class FileParserTest(unittest.TestCase):
         del self.tested
         os.remove(self.fname)
 
+class SingleLineFileParserTest(FileParserTest):
+    def setUp(self):
+        super(SingleLineFileParserTest, self).setUp()
+
+        row_parser = SimpleRowParser('^\d+')
+        self.tested = SingleLineFileParser(row_parser, self.fname, self.pattern)
+
     def fill_file(self, f):
         contents = '''
             1 a
@@ -48,13 +55,6 @@ class FileParserTest(unittest.TestCase):
         contents = '\n'.join([row.strip() for row in contents.split('\n')])
         f.write(contents)
 
-class SingleLineFileParserTest(FileParserTest):
-    def setUp(self):
-        super(SingleLineFileParserTest, self).setUp()
-
-        row_parser = SimpleRowParser('^\d+')
-        self.tested = SingleLineFileParser(row_parser, self.fname, self.pattern)
-
     def test_parsing(self):
         results = [(res.timestamp, res.row) for res in self.tested]
         required_results = [(5, '5 abcd'),
@@ -70,7 +70,65 @@ class ContextFileParserTest(FileParserTest):
         row_parser = SimpleRowParser('^\d+')
         self.tested = ContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
 
-    def test_parsing(self):
+    def fill_file(self, f):
+        contents = '''
+            1 a
+            2 b
+            3 c
+            4 d
+            5 abcd
+            6 e
+            7 f
+            8 abcd
+            9 a
+            10 a
+            11 a
+            12 a
+            13 a
+            14 a
+            15 a
+            16 abcd
+            17 a
+            18 a
+            '''.strip()
+        contents = '\n'.join([row.strip() for row in contents.split('\n')])
+        f.write(contents)
+
+    def test_parsing_c1(self):
+        self.tested.set_context_size(1)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(4, '4 d'),
+                            (5, '5 abcd'),
+                            (6, '6 e'),
+                            (7, '7 f'),
+                            (8, '8 abcd'),
+                            (9, '9 a'),
+                            (15, '15 a'),
+                            (16, '16 abcd'),
+                            (17, '17 a')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c2(self):
+        self.tested.set_context_size(2)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(3, '3 c'),
+                            (4, '4 d'),
+                            (5, '5 abcd'),
+                            (6, '6 e'),
+                            (7, '7 f'),
+                            (8, '8 abcd'),
+                            (9, '9 a'),
+                            (10, '10 a'),
+                            (14, '14 a'),
+                            (15, '15 a'),
+                            (16, '16 abcd'),
+                            (17, '17 a'),
+                            (18, '18 a')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c3(self):
         results = [(res.timestamp, res.row) for res in self.tested]
         required_results = [(2, '2 b'),
                             (3, '3 c'),
@@ -86,7 +144,80 @@ class ContextFileParserTest(FileParserTest):
                             (14, '14 a'),
                             (15, '15 a'),
                             (16, '16 abcd'),
-                            (17, '17 a')]
+                            (17, '17 a'),
+                            (18, '18 a')]
+
+        self.assertEqual(results, required_results)
+
+class ContextFileParserTestShortFile(ContextFileParserTest):
+    def fill_file(self, f):
+        contents = '''
+            1 a
+            2 b
+            3 c
+            4 d
+            5 abcd
+            6 e
+            7 f
+            8 abcd
+            9 a
+            10 a
+            11 a
+            12 a
+            13 a
+            14 a
+            15 a
+            16 abcd'''.strip()
+        contents = '\n'.join([row.strip() for row in contents.split('\n')])
+        f.write(contents)
+
+    def test_parsing_c1(self):
+        self.tested.set_context_size(1)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(4, '4 d'),
+                            (5, '5 abcd'),
+                            (6, '6 e'),
+                            (7, '7 f'),
+                            (8, '8 abcd'),
+                            (9, '9 a'),
+                            (15, '15 a'),
+                            (16, '16 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c2(self):
+        self.tested.set_context_size(2)
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(3, '3 c'),
+                            (4, '4 d'),
+                            (5, '5 abcd'),
+                            (6, '6 e'),
+                            (7, '7 f'),
+                            (8, '8 abcd'),
+                            (9, '9 a'),
+                            (10, '10 a'),
+                            (14, '14 a'),
+                            (15, '15 a'),
+                            (16, '16 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c3(self):
+        results = [(res.timestamp, res.row) for res in self.tested]
+        required_results = [(2, '2 b'),
+                            (3, '3 c'),
+                            (4, '4 d'),
+                            (5, '5 abcd'),
+                            (6, '6 e'),
+                            (7, '7 f'),
+                            (8, '8 abcd'),
+                            (9, '9 a'),
+                            (10, '10 a'),
+                            (11, '11 a'),
+                            (13, '13 a'),
+                            (14, '14 a'),
+                            (15, '15 a'),
+                            (16, '16 abcd')]
 
         self.assertEqual(results, required_results)
 

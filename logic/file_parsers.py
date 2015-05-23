@@ -38,10 +38,19 @@ class SingleLineFileParser(BaseFileParser):
 class ContextFileParser(BaseFileParser):
     def __init__(self, *args, **kwargs):
         self._context_size = kwargs.pop('context_size', 100)
+        assert self._context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
+
         self._buffer = collections.deque()
         self._pending_rows = 0
 
         super(ContextFileParser, self).__init__(*args, **kwargs)
+
+    def set_context_size(self, context_size):
+        if self._context_size != context_size:
+            assert len(self._buffer) == 0, 'Parsing is in progress, cannot change context size'
+            assert context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
+
+            self._context_size = context_size
 
     def next(self):
         while True:
