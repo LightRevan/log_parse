@@ -25,6 +25,7 @@ class FileParserTest(unittest.TestCase):
         del self.tested
         os.remove(self.fname)  # TODO: for some weird reason fails when test fails
 
+
 class SingleLineFileParserTest(FileParserTest):
     def setUp(self):
         super(SingleLineFileParserTest, self).setUp()
@@ -62,6 +63,7 @@ class SingleLineFileParserTest(FileParserTest):
                             (16, '16 abcd')]
 
         self.assertEqual(results, required_results)
+
 
 class ContextFileParserTest(FileParserTest):
     def setUp(self):
@@ -149,6 +151,7 @@ class ContextFileParserTest(FileParserTest):
 
         self.assertEqual(results, required_results)
 
+
 class ContextFileParserTestShortFile(ContextFileParserTest):
     def fill_file(self, f):
         contents = '''
@@ -221,6 +224,7 @@ class ContextFileParserTestShortFile(ContextFileParserTest):
 
         self.assertEqual(results, required_results)
 
+
 class ThreadCommonBufferParserTest(FileParserTest):
     def setUp(self):
         super(ThreadCommonBufferParserTest, self).setUp()
@@ -253,7 +257,6 @@ class ThreadCommonBufferParserTest(FileParserTest):
                             (6, '6 T1 e'),
                             (8, '8 T2 a'),
                             (9, '9 T2 a'),
-                            (10, '10 T1 a'),
                             (11, '11 T2 abcd')]
 
         self.assertEqual(results, required_results)
@@ -268,7 +271,6 @@ class ThreadCommonBufferParserTest(FileParserTest):
                             (7, '7 T2 f'),
                             (8, '8 T2 a'),
                             (9, '9 T2 a'),
-                            (10, '10 T1 a'),
                             (11, '11 T2 abcd')]
 
         self.assertEqual(results, required_results)

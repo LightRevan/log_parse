@@ -68,9 +68,7 @@ class ContextCommonBufferFileParser(BaseFileParser):
 
                 self._add_to_buffer(row_params, row)
             except StopIteration:
-                if self._pending_rows:
-                    pass  # file ended - fuck it, we have buffer
-                else:
+                if not self._pending_rows:
                     raise StopIteration
 
             if self._pending_rows:
@@ -100,19 +98,23 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
         super(ThreadContextCommonBufferFileParser, self).__init__(*args, **kwargs)
         assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
 
-        self._looked_up_threads = set()
+        self._looked_up_threads = {}
+        self._current_row_number = 0
 
     def _init_output(self, row_params):
         self._pending_rows = len(self._buffer) + 1 + self._context_size
-        self._looked_up_threads.add(row_params['thread'])
+        self._looked_up_threads[row_params['thread']]  = self._current_row_number
 
     def _add_to_buffer(self, row_params, row):
-        self._buffer.append((row_params['timestamp'],
+        self._buffer.append((self._current_row_number,
+                             row_params['timestamp'],
                              row_params['thread'],
                              row))
+        self._current_row_number += 1
 
     def _output(self):
-        self.timestamp, thread, self.row = self._buffer.popleft()
+        row_number, self.timestamp, thread, self.row = self._buffer.popleft()
         self._pending_rows -= 1
-        if thread in self._looked_up_threads:
-            return self
+        thread_row_number = self._looked_up_threads.get(thread, None)
+        if thread_row_number and abs(thread_row_number-row_number) <= self._context_size:
+            return True
