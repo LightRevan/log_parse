@@ -13,7 +13,7 @@ class BaseFileParser(object):
 
     def __del__(self):
         # TODO: test that it really works
-        self.file.close()
+        self._file.close()
 
     def __cmp__(self, other):
         if not isinstance(other, BaseFileParser):

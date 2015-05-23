@@ -12,15 +12,18 @@ from logic.row_parsers import *
 
 class FileParserTest(unittest.TestCase):
     def setUp(self):
-        _, self.fname = tempfile.mkstemp()
+        fd, self.fname = tempfile.mkstemp()
+        os.close(fd)
+
         self.pattern = re.compile('abcd')
+        self.tested = None
 
         with open(self.fname, 'w') as f:
             self.fill_file(f)
 
     def tearDown(self):
-        if os.path.exists(self.fname):
-            os.remove(self.fname)
+        del self.tested
+        os.remove(self.fname)
 
     def fill_file(self, f):
         contents = '''
