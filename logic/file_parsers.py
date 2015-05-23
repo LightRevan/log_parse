@@ -25,7 +25,7 @@ class BaseFileParser(object):
         return self
 
     def next(self):
-        raise NotImplemented
+        raise StopIteration
 
 
 class SingleLineFileParser(BaseFileParser):
@@ -39,12 +39,15 @@ class SingleLineFileParser(BaseFileParser):
                 return self
 
 
-class ContextFileParser(BaseFileParser):
+class ContextCommonBufferFileParser(BaseFileParser):
     def __init__(self, *args, **kwargs):
         self._context_size = kwargs.pop('context_size', 100)
         assert self._context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
 
-        super(ContextFileParser, self).__init__(*args, **kwargs)
+        super(ContextCommonBufferFileParser, self).__init__(*args, **kwargs)
+
+        self._buffer = collections.deque()
+        self._pending_rows = 0
 
     def set_context_size(self, context_size):
         if self._context_size != context_size:
@@ -52,13 +55,6 @@ class ContextFileParser(BaseFileParser):
             assert context_size > 0, 'Context cannot be zero. Use SingleLineFileParser instead'
 
             self._context_size = context_size
-
-class ContextCommonBufferFileParser(ContextFileParser):
-    def __init__(self, *args, **kwargs):
-        super(ContextCommonBufferFileParser, self).__init__(*args, **kwargs)
-
-        self._buffer = collections.deque()
-        self._pending_rows = 0
 
     def next(self):
         while True:
@@ -122,14 +118,3 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
             self.timestamp, self.row = timestamp, row
             return True
-
-
-class MultiThreadContextFileParser(ContextFileParser):
-    def __init__(self, *args, **kwargs):
-        super(MultiThreadContextFileParser, self).__init__(*args, **kwargs)
-
-        self._buffer = collections.deque()
-        self._pending_rows = 0
-
-    def next(self):
-        pass
