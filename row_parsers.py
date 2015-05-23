@@ -7,4 +7,4 @@ class SimpleRowParser(object):
         self.timestamp_pattern = re.compile(timestamp_pattern)
 
     def parse_row(self, row):
-        return int(self.timestamp_pattern.search(row).group(0))
+        return {'timestamp': int(self.timestamp_pattern.search(row).group(0))}
