@@ -1,25 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import re, heapq
+import heapq
 
-class BaseFileParser(object):
-    def __init__(self, file_name, pattern):
-        self.file = open(file_name, 'r')
-        self.pattern = pattern
-        self.timestamp = None
-        self.row = None
-
-    def __del__(self):
-        self.file.close()
-
-    def __cmp__(self, other):
-        if not isinstance(other, BaseFileParser):
-            raise TypeError('Trying to compare FileParser object with something else: %s' % type(other))
-        return cmp(self.timestamp, other.timestamp)
-
-    def fetch_next_row(self):
-        return False
+from parsers import *
 
 class BaseMultiFileParser(object):
     def __init__(self, pattern):
@@ -45,10 +29,14 @@ class BaseMultiFileParser(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
     parser.add_argument('pattern', help='regular expression, compatible with python re module')
     parser.add_argument('file_names', nargs='+')
 
     args = parser.parse_args()
+
+    parser = BaseMultiFileParser(args.pattern)
+    parser.parse(args.file_names)
+
+
 
 
