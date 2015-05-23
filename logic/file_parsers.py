@@ -209,6 +209,11 @@ class MultiThreadContextFileParser(ContextFileParser):
         self._buffer_heap = []
         self._file_ended = False
 
+    def set_context_size(self, context_size):
+        if self._context_size != context_size:
+            assert not self._thread_buffers, 'Parsing is in progress, cannot change context size'
+            super(MultiThreadContextFileParser, self).set_context_size(context_size)
+
     def next(self):
         while True:
             try:
@@ -231,6 +236,8 @@ class MultiThreadContextFileParser(ContextFileParser):
                     heapq.heappush(self._buffer_heap, thread_buffer)
             except StopIteration:
                 self._file_ended = True
+                if not len(self._buffer_heap):
+                    raise StopIteration
 
             if len(self._buffer_heap):
                 thread_buffer = heapq.heappop(self._buffer_heap)
