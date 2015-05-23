@@ -131,10 +131,10 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
 
 class SingleThreadContextFileParser(ContextCommonBufferFileParser):
     def __init__(self, *args, **kwargs):
+        self._thread = kwargs.pop('thread')
+
         super(SingleThreadContextFileParser, self).__init__(*args, **kwargs)
         assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
-
-        self._thread = None
 
     def _init_output(self, row_params):
         if self._thread is None or row_params['thread'] == self._thread:
