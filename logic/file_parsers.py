@@ -12,7 +12,6 @@ class BaseFileParser(object):
         self.row = None
 
     def __del__(self):
-        # TODO: test that it really works
         self._file.close()
 
     def __cmp__(self, other):
@@ -41,7 +40,7 @@ class ContextFileParser(BaseFileParser):
         self._context_size = kwargs.pop('context_size', 100)
         self._buffer = collections.deque()
 
-        super(ContextFileParser, self).__init__(self, *args, **kwargs)
+        super(ContextFileParser, self).__init__(*args, **kwargs)
 
     def next(self):
         pending_rows = 0
@@ -52,7 +51,7 @@ class ContextFileParser(BaseFileParser):
                 row_parse_result = self._row_parser.parse_row(row)
                 timestamp = row_parse_result['timestamp']
 
-                if self._pattern.find(row):
+                if self._pattern.search(row):
                     pending_rows = len(self._buffer) + self._context_size
                 elif len(self._buffer) == self._context_size and pending_rows == 0:
                     self._buffer.popleft()
