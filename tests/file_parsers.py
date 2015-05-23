@@ -68,7 +68,7 @@ class ContextFileParserTest(FileParserTest):
         super(ContextFileParserTest, self).setUp()
 
         row_parser = SimpleRowParser('^\d+')
-        self.tested = ContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        self.tested = SimpleContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
