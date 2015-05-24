@@ -7,10 +7,10 @@ from row_parsers import *
 
 
 class BaseFileParser(object):
-    def __init__(self, row_parser, file_name, pattern):
+    def __init__(self, row_parser, row_getter_type, file_name, pattern):
         self._file = open(file_name, 'r')
+        self._row_getter = row_getter_type(self._file, row_parser)
         self._pattern = pattern
-        self._row_parser = row_parser
 
     def __del__(self):
         self._file.close()
@@ -25,9 +25,8 @@ class BaseFileParser(object):
 class SingleLineFileParser(BaseFileParser):
     def next(self):
         while True:
-            row = self._file.next().strip()
+            row, row_parse_result = self._row_getter.get_row()
             if self._pattern.search(row):
-                row_parse_result = self._row_parser.parse_row(row)
                 timestamp = row_parse_result['timestamp']
                 return timestamp, row
 
@@ -61,8 +60,7 @@ class ContextCommonBufferFileParser(ContextFileParser):
     def next(self):
         while True:
             try:
-                row = self._file.next().strip()
-                row_params = self._row_parser.parse_row(row)
+                row, row_params = self._row_getter.get_row()
 
                 if self._pattern.search(row):
                     self._init_output(row_params)
@@ -98,9 +96,9 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
 
 
 class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
-    def __init__(self, *args, **kwargs):
-        super(ThreadContextCommonBufferFileParser, self).__init__(*args, **kwargs)
-        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+    def __init__(self, row_parser, row_getter_type, file_name, pattern, **kwargs):
+        assert isinstance(row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+        super(ThreadContextCommonBufferFileParser, self).__init__(row_parser, row_getter_type, file_name, pattern, **kwargs)
 
         self._looked_up_threads = {}
         self._current_row_number = 0
@@ -125,11 +123,11 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
 
 
 class SingleThreadContextFileParser(ContextCommonBufferFileParser):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, row_parser, row_getter_type, file_name, pattern, **kwargs):
+        assert isinstance(row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
         self._thread = kwargs.pop('thread', None)
 
-        super(SingleThreadContextFileParser, self).__init__(*args, **kwargs)
-        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+        super(SingleThreadContextFileParser, self).__init__(row_parser, row_getter_type, file_name, pattern, **kwargs)
 
     def _init_output(self, row_params):
         if self._thread is None or row_params['thread'] == self._thread:
@@ -191,10 +189,9 @@ class ThreadBuffer(object):
 
 
 class MultiThreadContextFileParser(ContextFileParser):
-    # TODO: think really hard about sequence of threads in output
-    def __init__(self, *args, **kwargs):
-        super(MultiThreadContextFileParser, self).__init__(*args, **kwargs)
-        assert isinstance(self._row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+    def __init__(self, row_parser, row_getter_type, file_name, pattern, **kwargs):
+        assert isinstance(row_parser, ThreadRowParser), 'Row parser should be ThreadRowParser'
+        super(MultiThreadContextFileParser, self).__init__(row_parser, row_getter_type, file_name, pattern, **kwargs)
 
         self._thread_buffers = {}
         self._buffer_heap = []
@@ -228,8 +225,7 @@ class MultiThreadContextFileParser(ContextFileParser):
     def next(self):
         while True:
             try:
-                row = self._file.next().strip()
-                row_params = self._row_parser.parse_row(row)
+                row,row_params = self._row_getter.get_row()
                 thread = row_params['thread']
 
                 thread_buffer = self._thread_buffers.get(thread)

@@ -9,8 +9,8 @@ from file_parsers import *
 from row_parsers import *
 
 
-def create_file_parser(file_parser_cls, row_parser, **kwargs):
-    return functools.partial(file_parser_cls, row_parser, **kwargs)
+def create_file_parser(file_parser_cls, row_parser, row_getter_cls, **kwargs):
+    return functools.partial(file_parser_cls, row_parser, row_getter_cls, **kwargs)
 
 
 class FileParserDecorator(object):
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('file_names', nargs='+')
     args = parser.parse_args()
 
-    parser_creator = create_file_parser(SingleLineFileParser, SimpleRowParser('^\d+'))
+    parser_creator = create_file_parser(SingleLineFileParser, SimpleRowParser('^\d+'), SimpleRowGetter)
     parser = BaseParseContoller(args.pattern)
 
     parser.parse(args.file_names, parser_creator)

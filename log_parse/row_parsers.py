@@ -20,3 +20,16 @@ class ThreadRowParser(object):
     def parse_row(self, row):
         return {'timestamp': int(self.timestamp_pattern.search(row).group(0)),
                 'thread': self.thread_pattern.search(row).group(0)}
+
+
+class SimpleRowGetter(object):
+    def __init__(self, f, row_parser):
+        self._f = f
+        self._row_parser = row_parser
+
+    def get_row(self):
+        row = self._f.next().strip()
+        return row, self._row_parser.parse_row(row)
+
+
+# class Uni

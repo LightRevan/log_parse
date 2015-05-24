@@ -31,7 +31,8 @@ class SingleLineFileParserTest(FileParserTest):
         super(SingleLineFileParserTest, self).setUp()
 
         row_parser = SimpleRowParser('^\d+')
-        self.tested = SingleLineFileParser(row_parser, self.fname, self.pattern)
+        row_getter_cls = SimpleRowGetter
+        self.tested = SingleLineFileParser(row_parser, row_getter_cls, self.fname, self.pattern)
 
     def fill_file(self, f):
         contents = '''
@@ -70,7 +71,8 @@ class ContextFileParserTest(FileParserTest):
         super(ContextFileParserTest, self).setUp()
 
         row_parser = SimpleRowParser('^\d+')
-        self.tested = SimpleContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        row_getter_cls = SimpleRowGetter
+        self.tested = SimpleContextFileParser(row_parser, row_getter_cls, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
@@ -230,7 +232,8 @@ class ThreadCommonBufferParserTest(FileParserTest):
         super(ThreadCommonBufferParserTest, self).setUp()
 
         row_parser = ThreadRowParser('^\d+', 'T\d+')
-        self.tested = ThreadContextCommonBufferFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        row_getter_cls = SimpleRowGetter
+        self.tested = ThreadContextCommonBufferFileParser(row_parser, row_getter_cls, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
@@ -296,7 +299,8 @@ class SingleThreadParserTest(FileParserTest):
         super(SingleThreadParserTest, self).setUp()
 
         row_parser = ThreadRowParser('^\d+', 'T\d+')
-        self.tested = SingleThreadContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        row_getter_cls = SimpleRowGetter
+        self.tested = SingleThreadContextFileParser(row_parser, row_getter_cls, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
@@ -364,7 +368,8 @@ class MultiThreadParserTest(FileParserTest):
         super(MultiThreadParserTest, self).setUp()
 
         row_parser = ThreadRowParser('^\d+', 'T\d+')
-        self.tested = MultiThreadContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        row_getter_cls = SimpleRowGetter
+        self.tested = MultiThreadContextFileParser(row_parser, row_getter_cls, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
@@ -474,7 +479,8 @@ class MultiThreadBlobParserTest(FileParserTest):
         super(MultiThreadBlobParserTest, self).setUp()
 
         row_parser = ThreadRowParser('^\d+', 'T\d+')
-        self.tested = MultiThreadBlobbingContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+        row_getter_cls = SimpleRowGetter
+        self.tested = MultiThreadBlobbingContextFileParser(row_parser, row_getter_cls, self.fname, self.pattern, context_size=3)
 
     def fill_file(self, f):
         contents = '''
