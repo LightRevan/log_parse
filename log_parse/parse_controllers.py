@@ -25,8 +25,9 @@ class FileParserDecorator(object):
 
 
 class BaseParseContoller(object):  # TODO: test this shit
-    def __init__(self, pattern):
+    def __init__(self, pattern, output_method):
         self.pattern = re.compile(pattern)
+        self.output_method = output_method
 
     def parse(self, file_names, create_parser):
         parsers = []
@@ -41,14 +42,15 @@ class BaseParseContoller(object):  # TODO: test this shit
             decorator = heapq.heappop(parsers)
 
             try:
+                self.output(decorator.row, decorator.row_params)
                 decorator.fetch()
-                self.output(decorator.row)
                 heapq.heappush(parsers, decorator)
             except StopIteration:
                 pass
 
-    def output(self, row):
-        print row
+    def output(self, row, row_params):
+        self.output_method(row, row_params)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
