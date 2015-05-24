@@ -25,7 +25,7 @@ class BaseFileParser(object):
 class SingleLineFileParser(BaseFileParser):
     def next(self):
         while True:
-            row, row_parse_result = self._row_getter.get_row()
+            row, row_parse_result = self._row_getter.next()
             if self._pattern.search(row):
                 timestamp = row_parse_result['timestamp']
                 return timestamp, row
@@ -60,7 +60,7 @@ class ContextCommonBufferFileParser(ContextFileParser):
     def next(self):
         while True:
             try:
-                row, row_params = self._row_getter.get_row()
+                row, row_params = self._row_getter.next()
 
                 if self._pattern.search(row):
                     self._init_output(row_params)
@@ -225,7 +225,7 @@ class MultiThreadContextFileParser(ContextFileParser):
     def next(self):
         while True:
             try:
-                row,row_params = self._row_getter.get_row()
+                row,row_params = self._row_getter.next()
                 thread = row_params['thread']
 
                 thread_buffer = self._thread_buffers.get(thread)
