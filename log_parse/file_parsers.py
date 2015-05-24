@@ -205,6 +205,26 @@ class MultiThreadContextFileParser(ContextFileParser):
             assert not self._thread_buffers, 'Parsing is in progress, cannot change context size'
             super(MultiThreadContextFileParser, self).set_context_size(context_size)
 
+    def _process_buffer(self, thread_buffer, was_not_ready, is_ready):
+        if is_ready and was_not_ready:
+            heapq.heappush(self._buffer_heap, thread_buffer)
+
+    def _process_file_end(self):
+        if not len(self._buffer_heap):
+            raise StopIteration
+
+    def _prepare_output(self):
+        if len(self._buffer_heap):
+            thread_buffer = heapq.heappop(self._buffer_heap)
+            timestamp, row = thread_buffer.pop()
+            if thread_buffer.output_ready():
+                heapq.heappush(self._buffer_heap, thread_buffer)
+            return timestamp, row
+        elif self._file_ended:
+            raise StopIteration
+
+        return None
+
     def next(self):
         while True:
             try:
@@ -223,18 +243,43 @@ class MultiThreadContextFileParser(ContextFileParser):
                 thread_buffer.push(row_params['timestamp'], row)
                 is_ready = thread_buffer.output_ready()
 
-                if is_ready and was_not_ready:
-                    heapq.heappush(self._buffer_heap, thread_buffer)
+                self._process_buffer(thread_buffer, was_not_ready, is_ready)
             except StopIteration:
                 self._file_ended = True
-                if not len(self._buffer_heap):
-                    raise StopIteration
+                self._process_file_end()
 
-            if len(self._buffer_heap):
-                thread_buffer = heapq.heappop(self._buffer_heap)
-                timestamp, row = thread_buffer.pop()
-                if thread_buffer.output_ready():
-                    heapq.heappush(self._buffer_heap, thread_buffer)
-                return timestamp, row
-            elif self._file_ended:
-                raise StopIteration
+            res = self._prepare_output()
+            if res is not None:
+                return res
+
+
+class MultiThreadBlobbingContextFileParser(MultiThreadContextFileParser):
+    def __init__(self, *args, **kwargs):
+        super(MultiThreadBlobbingContextFileParser, self).__init__(*args, **kwargs)
+
+        self._current_buffer = None
+
+    def _process_buffer(self, thread_buffer, was_not_ready, is_ready):
+        if thread_buffer is not self._current_buffer and is_ready and was_not_ready:
+            heapq.heappush(self._buffer_heap, thread_buffer)
+
+    def _process_file_end(self):
+        if not len(self._buffer_heap) and not self._current_buffer:
+            raise StopIteration
+
+    def _prepare_output(self):
+        if self._current_buffer:
+            timestamp, row = self._current_buffer.pop()
+            if not self._current_buffer.output_ready():
+                self._current_buffer = None
+            return timestamp, row
+        elif len(self._buffer_heap):
+            thread_buffer = heapq.heappop(self._buffer_heap)
+            timestamp, row = thread_buffer.pop()
+            if thread_buffer.output_ready():
+                self._current_buffer = thread_buffer
+            return timestamp, row
+        elif self._file_ended:
+            raise StopIteration
+
+        return None

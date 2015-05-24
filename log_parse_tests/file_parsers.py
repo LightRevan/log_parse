@@ -469,5 +469,115 @@ class MultiThreadParserTest(FileParserTest):
         self.assertEqual(results, required_results)
 
 
+class MultiThreadBlobParserTest(FileParserTest):
+    def setUp(self):
+        super(MultiThreadBlobParserTest, self).setUp()
+
+        row_parser = ThreadRowParser('^\d+', 'T\d+')
+        self.tested = MultiThreadBlobbingContextFileParser(row_parser, self.fname, self.pattern, context_size=3)
+
+    def fill_file(self, f):
+        contents = '''
+            1 T1 a
+            2 T1 b
+            3 T2 c
+            4 T2 d
+            5 T1 abcd
+            6 T2 abcd
+            7 T3 a
+            7 T3 a
+            7 T3 a
+            7 T2 f
+            8 T2 a
+            9 T2 a
+            10 T1 a
+            11 T2 abcd
+            '''.strip()
+        contents = '\n'.join([row.strip() for row in contents.split('\n')])
+        f.write(contents)
+
+    def test_parsing_c1(self):
+        self.tested.set_context_size(1)
+        results = [res for res in self.tested]
+        required_results = [(2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (4, '4 T2 d'),
+                            (6, '6 T2 abcd'),
+                            (7, '7 T2 f'),
+                            (10, '10 T1 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c2(self):
+        self.tested.set_context_size(2)
+        results = [res for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (3, '3 T2 c'),
+                            (4, '4 T2 d'),
+                            (6, '6 T2 abcd'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (10, '10 T1 a'),
+                            (9, '9 T2 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c3(self):
+        self.tested.set_context_size(3)
+        results = [res for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (3, '3 T2 c'),
+                            (4, '4 T2 d'),
+                            (6, '6 T2 abcd'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c4(self):
+        self.tested.set_context_size(4)
+        results = [res for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (3, '3 T2 c'),
+                            (4, '4 T2 d'),
+                            (6, '6 T2 abcd'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c5(self):
+        self.tested.set_context_size(5)
+        results = [res for res in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (5, '5 T1 abcd'),
+                            (3, '3 T2 c'),
+                            (4, '4 T2 d'),
+                            (6, '6 T2 abcd'),
+                            (7, '7 T2 f'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+
 if __name__ == '__main__':
     unittest.main()
