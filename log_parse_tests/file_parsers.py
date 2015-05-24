@@ -57,7 +57,7 @@ class SingleLineFileParserTest(FileParserTest):
         f.write(contents)
 
     def test_parsing(self):
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(5, '5 abcd'),
                             (8, '8 abcd'),
                             (16, '16 abcd')]
@@ -98,7 +98,7 @@ class ContextFileParserTest(FileParserTest):
 
     def test_parsing_c1(self):
         self.tested.set_context_size(1)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(4, '4 d'),
                             (5, '5 abcd'),
                             (6, '6 e'),
@@ -113,7 +113,7 @@ class ContextFileParserTest(FileParserTest):
 
     def test_parsing_c2(self):
         self.tested.set_context_size(2)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(3, '3 c'),
                             (4, '4 d'),
                             (5, '5 abcd'),
@@ -131,7 +131,7 @@ class ContextFileParserTest(FileParserTest):
         self.assertEqual(results, required_results)
 
     def test_parsing_c3(self):
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(2, '2 b'),
                             (3, '3 c'),
                             (4, '4 d'),
@@ -176,7 +176,7 @@ class ContextFileParserTestShortFile(ContextFileParserTest):
 
     def test_parsing_c1(self):
         self.tested.set_context_size(1)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(4, '4 d'),
                             (5, '5 abcd'),
                             (6, '6 e'),
@@ -190,7 +190,7 @@ class ContextFileParserTestShortFile(ContextFileParserTest):
 
     def test_parsing_c2(self):
         self.tested.set_context_size(2)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(3, '3 c'),
                             (4, '4 d'),
                             (5, '5 abcd'),
@@ -206,7 +206,7 @@ class ContextFileParserTestShortFile(ContextFileParserTest):
         self.assertEqual(results, required_results)
 
     def test_parsing_c3(self):
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(2, '2 b'),
                             (3, '3 c'),
                             (4, '4 d'),
@@ -251,7 +251,7 @@ class ThreadCommonBufferParserTest(FileParserTest):
 
     def test_parsing_c3(self):
         self.tested.set_context_size(3)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(2, '2 T1 b'),
                             (5, '5 T1 abcd'),
                             (6, '6 T1 e'),
@@ -263,7 +263,7 @@ class ThreadCommonBufferParserTest(FileParserTest):
 
     def test_parsing_c4(self):
         self.tested.set_context_size(4)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (5, '5 T1 abcd'),
@@ -277,7 +277,7 @@ class ThreadCommonBufferParserTest(FileParserTest):
 
     def test_parsing_c5(self):
         self.tested.set_context_size(5)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (5, '5 T1 abcd'),
@@ -322,7 +322,7 @@ class SingleThreadParserTest(FileParserTest):
 
     def test_parsing_c1(self):
         self.tested.set_context_size(1)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(5, '5 T1 abcd'),
                             (6, '6 T1 e'),
                             (10, '10 T1 a'),
@@ -333,7 +333,7 @@ class SingleThreadParserTest(FileParserTest):
 
     def test_parsing_c2(self):
         self.tested.set_context_size(2)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(2, '2 T1 b'),
                             (5, '5 T1 abcd'),
                             (6, '6 T1 e'),
@@ -346,7 +346,7 @@ class SingleThreadParserTest(FileParserTest):
 
     def test_parsing_c3(self):
         self.tested.set_context_size(3)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (5, '5 T1 abcd'),
@@ -388,7 +388,7 @@ class MultiThreadParserTest(FileParserTest):
 
     def test_parsing_c1(self):
         self.tested.set_context_size(1)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(2, '2 T1 b'),
                             (4, '4 T2 d'),
                             (5, '5 T1 abcd'),
@@ -402,7 +402,7 @@ class MultiThreadParserTest(FileParserTest):
 
     def test_parsing_c2(self):
         self.tested.set_context_size(2)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (3, '3 T2 c'),
@@ -419,7 +419,7 @@ class MultiThreadParserTest(FileParserTest):
 
     def test_parsing_c3(self):
         self.tested.set_context_size(3)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (3, '3 T2 c'),
@@ -436,7 +436,7 @@ class MultiThreadParserTest(FileParserTest):
 
     def test_parsing_c4(self):
         self.tested.set_context_size(4)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (3, '3 T2 c'),
@@ -453,7 +453,7 @@ class MultiThreadParserTest(FileParserTest):
 
     def test_parsing_c5(self):
         self.tested.set_context_size(5)
-        results = [(res.timestamp, res.row) for res in self.tested]
+        results = [res for res in self.tested]
         required_results = [(1, '1 T1 a'),
                             (2, '2 T1 b'),
                             (3, '3 T2 c'),

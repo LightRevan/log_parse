@@ -13,6 +13,21 @@ def create_file_parser(file_parser_cls, row_parser, **kwargs):
     return functools.partial(file_parser_cls, row_parser, **kwargs)
 
 
+class FileParserDecorator(object):
+    def __init__(self, file_parser):
+        self.file_parser = file_parser
+        self.timestamp = None
+        self.row = None
+
+    def __cmp__(self, other):
+        if not isinstance(other, FileParserDecorator):
+            raise TypeError('Trying to compare FileParserDecorator object with something else: %s' % type(other))
+        return cmp(self.timestamp, other.timestamp)
+
+    def fetch(self):
+        self.timestamp, self.row = self.file_parser.next()
+
+
 class BaseParseContoller(object):  # TODO: test this shit
     def __init__(self, pattern):
         self.pattern = re.compile(pattern)
@@ -20,18 +35,19 @@ class BaseParseContoller(object):  # TODO: test this shit
     def parse(self, file_names, create_parser):
         parsers = []
         for file_name in file_names:
-            parser_ = create_parser(file_name, self.pattern)
-            parser_.next()
-            parsers.append(parser_)
+            file_parser = create_parser(file_name, self.pattern)
+            decorator = FileParserDecorator(file_parser)
+            decorator.fetch()
+            parsers.append(decorator)
 
         heapq.heapify(parsers)
         while parsers:
-            parser_ = heapq.heappop(parsers)
+            decorator = heapq.heappop(parsers)
 
             try:
-                parser_.next()
-                self.output(parser_.row)
-                heapq.heappush(parsers, parser_)
+                decorator.fetch()
+                self.output(decorator.row)
+                heapq.heappush(parsers, decorator)
             except StopIteration:
                 pass
 

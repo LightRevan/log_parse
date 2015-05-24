@@ -11,16 +11,9 @@ class BaseFileParser(object):
         self._file = open(file_name, 'r')
         self._pattern = pattern
         self._row_parser = row_parser
-        self.timestamp = None
-        self.row = None
 
     def __del__(self):
         self._file.close()
-
-    def __cmp__(self, other):
-        if not isinstance(other, BaseFileParser):
-            raise TypeError('Trying to compare FileParser object with something else: %s' % type(other))
-        return cmp(self.timestamp, other.timestamp)
 
     def __iter__(self):
         return self
@@ -31,13 +24,12 @@ class BaseFileParser(object):
 
 class SingleLineFileParser(BaseFileParser):
     def next(self):
-        # as file stops so should we
         while True:
-            self.row = self._file.next().strip()
-            if self._pattern.search(self.row):
-                row_parse_result = self._row_parser.parse_row(self.row)
-                self.timestamp = row_parse_result['timestamp']
-                return self
+            row = self._file.next().strip()
+            if self._pattern.search(row):
+                row_parse_result = self._row_parser.parse_row(row)
+                timestamp = row_parse_result['timestamp']
+                return timestamp, row
 
 
 class ContextFileParser(BaseFileParser):
@@ -84,8 +76,10 @@ class ContextCommonBufferFileParser(ContextFileParser):
             if len(self._buffer) > self._context_size or self._pending_rows:
                 try:
                     buffered_row = self._buffer.popleft()
-                    if self._pending_rows and self._prepare_output(*buffered_row):
-                        return self
+                    if self._pending_rows:
+                        res = self._prepare_output(*buffered_row)
+                        if res is not None:
+                            return res
                 except IndexError:
                     if self._file_ended:
                         raise StopIteration  # no more file or buffer
@@ -99,9 +93,8 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
         self._buffer.append((row_params['timestamp'], row))
 
     def _prepare_output(self, timestamp, row):
-        self.timestamp, self.row = timestamp, row
         self._pending_rows -= 1
-        return True
+        return timestamp, row
 
 
 class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
@@ -127,9 +120,8 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
         self._pending_rows -= 1
         thread_row_number = self._looked_up_threads.get(thread, None)
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
-            self.timestamp, self.row = timestamp, row
-            return True
-        return False
+            return timestamp, row
+        return None
 
 
 class SingleThreadContextFileParser(ContextCommonBufferFileParser):
@@ -158,10 +150,9 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
 
     def _prepare_output(self, timestamp, thread, row):
         if thread == self._thread:
-            self.timestamp, self.row = timestamp, row
             self._pending_rows -= 1
-            return True
-        return False
+            return timestamp, row
+        return None
 
 
 class ThreadBuffer(object):
@@ -241,9 +232,9 @@ class MultiThreadContextFileParser(ContextFileParser):
 
             if len(self._buffer_heap):
                 thread_buffer = heapq.heappop(self._buffer_heap)
-                self.timestamp, self.row = thread_buffer.pop()
+                timestamp, row = thread_buffer.pop()
                 if thread_buffer.output_ready():
                     heapq.heappush(self._buffer_heap, thread_buffer)
-                return self
+                return timestamp, row
             elif self._file_ended:
                 raise StopIteration
