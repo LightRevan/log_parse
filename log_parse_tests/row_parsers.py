@@ -7,7 +7,7 @@ from log_parse.row_parsers import *
 
 class MergingRowGetterTestCase(unittest.TestCase):
     def test_1(self):
-        row_parser = SimpleRowParser('^\d+')
+        row_parser = RowParser('.*', timestamp='^\d+')
         rows = ['2 a',
                 'cdf']
         tested = MergingRowGetter(iter(rows), row_parser)
@@ -16,7 +16,7 @@ class MergingRowGetterTestCase(unittest.TestCase):
         self.assertEqual(result, ['2 a\ncdf'])
 
     def test_2(self):
-        row_parser = SimpleRowParser('^\d+')
+        row_parser = RowParser('.*', timestamp='^\d+')
         rows = ['1 a',
                 '2 a',
                 'cdf',

@@ -2,37 +2,63 @@
 __author__ = 'lightrevan'
 
 import re
+import functools
 
 
-class SimpleRowParser(object):
-    def __init__(self, timestamp_pattern):
-        self.timestamp_pattern = re.compile(timestamp_pattern)
+def create_row_parser(cls, timestamp, **kwargs):
+    return functools.partial(cls, timestamp=timestamp, **kwargs)
+
+
+def not_none_transform(match):
+    if match is None:
+        raise AttributeError
+    else:
+        return match
+
+
+int_timestamp = ('^\d+', lambda x: int(not_none_transform(x)))
+
+
+class RowParser(object):
+    @classmethod
+    def _compile_pattern(cls, pattern):
+        return pattern if isinstance(pattern, re._pattern_type) else re.compile(pattern)
+
+    def __init__(self, match_pattern, **kwargs):
+        assert 'timestamp' in kwargs, 'Must have timestamp pattern in row parser'
+
+        match_pattern = match_pattern
+        self.patterns = {'match': (self._compile_pattern(match_pattern), lambda x: x)}
+        for name, data in kwargs.items():
+            if isinstance(data, tuple):
+                pattern, transform = data
+            else:
+                pattern = data
+                transform = not_none_transform
+
+            self.patterns[name] = (self._compile_pattern(pattern), transform)
 
     def parse_row(self, row):
-        return {'timestamp': int(self.timestamp_pattern.search(row).group(0))}
+        res = {}
+        for name, data in self.patterns.items():
+            pattern, transform = data
+            match = pattern.search(row)
+            res[name] = transform(match.group(0) if match else None)
 
-
-class ThreadRowParser(object):
-    def __init__(self, timestamp_pattern, thread_pattern):
-        self.timestamp_pattern = re.compile(timestamp_pattern)
-        self.thread_pattern = re.compile(thread_pattern)
-
-    def parse_row(self, row):
-        return {'timestamp': int(self.timestamp_pattern.search(row).group(0)),
-                'thread': self.thread_pattern.search(row).group(0)}
+        return res
 
 
 class SimpleRowGetter(object):
     def __init__(self, f, row_parser):
         self._f = f
-        self._row_parser = row_parser
+        self.row_parser = row_parser
 
     def __iter__(self):
         return self
 
     def next(self):
         row = self._f.next().strip()
-        return row, self._row_parser.parse_row(row)
+        return row, self.row_parser.parse_row(row)
 
 
 class MergingRowGetter(SimpleRowGetter):
@@ -45,7 +71,7 @@ class MergingRowGetter(SimpleRowGetter):
     def next(self):
         if self._next_row is None:
             row = self._f.next().strip()
-            params = self._row_parser.parse_row(row)
+            params = self.row_parser.parse_row(row)
         else:
             row, params = self._next_row, self._next_params
 
@@ -55,7 +81,7 @@ class MergingRowGetter(SimpleRowGetter):
             while not next_row_valid:
                 next_row = self._f.next()
                 try:
-                    next_params = self._row_parser.parse_row(next_row)
+                    next_params = self.row_parser.parse_row(next_row)
 
                     next_row_valid = True
                     self._next_row = next_row

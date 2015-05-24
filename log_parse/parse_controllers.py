@@ -3,14 +3,9 @@ __author__ = 'lightrevan'
 
 import argparse
 import heapq
-import functools
 
 from file_parsers import *
 from row_parsers import *
-
-
-def create_file_parser(file_parser_cls, row_parser, row_getter_cls, **kwargs):
-    return functools.partial(file_parser_cls, row_parser, row_getter_cls, **kwargs)
 
 
 class FileParserDecorator(object):
@@ -18,6 +13,7 @@ class FileParserDecorator(object):
         self.file_parser = file_parser
         self.timestamp = None
         self.row = None
+        self.row_params = None
 
     def __cmp__(self, other):
         if not isinstance(other, FileParserDecorator):
@@ -25,7 +21,7 @@ class FileParserDecorator(object):
         return cmp(self.timestamp, other.timestamp)
 
     def fetch(self):
-        self.timestamp, self.row = self.file_parser.next()
+        self.timestamp, self.row, self.row_params = self.file_parser.next()
 
 
 class BaseParseContoller(object):  # TODO: test this shit
@@ -60,7 +56,8 @@ if __name__ == '__main__':
     parser.add_argument('file_names', nargs='+')
     args = parser.parse_args()
 
-    parser_creator = create_file_parser(SingleLineFileParser, SimpleRowParser('^\d+'), SimpleRowGetter)
+    row_parser_creator = create_row_parser(RowParser, int_timestamp)
+    file_parser_creator = create_file_parser(row_parser_creator, SimpleRowGetter)
     parser = BaseParseContoller(args.pattern)
 
-    parser.parse(args.file_names, parser_creator)
+    parser.parse(args.file_names, file_parser_creator)
