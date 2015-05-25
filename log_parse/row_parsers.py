@@ -19,7 +19,15 @@ def not_none_transform(match):
 int_timestamp = ('^\d+', lambda x: int(not_none_transform(x)))
 
 
-class RowParser(object):
+class AbstractRowParser(object):
+    def __init__(self, match_pattern, timestamp=None):
+        raise NotImplemented
+
+    def parse_row(self, row):
+        raise NotImplemented
+
+
+class UniversalRowParser(AbstractRowParser):
     @classmethod
     def _compile_pattern(cls, pattern):
         return pattern if isinstance(pattern, re._pattern_type) else re.compile(pattern)
@@ -47,6 +55,25 @@ class RowParser(object):
 
         return res
 
+
+def param_transform(par_from, par_to):
+    def deco(f):
+        def wrap(*args, **kwargs):
+            timestamp = kwargs.pop(par_from)
+            kwargs[par_to] = timestamp
+            return f(*args, **kwargs)
+        return wrap
+    return deco
+
+
+class SinglePatterThreadParser(AbstractRowParser):
+    @param_transform('timestamp', 'row_pattern')
+    def __init__(self, match_pattern, row_pattern):
+        self.match_pattern = match_pattern
+        self.row_pattern = row_pattern
+
+    def parse_row(self, row):
+        pass
 
 class SimpleRowGetter(object):
     def __init__(self, f, row_parser):

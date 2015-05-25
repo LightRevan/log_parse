@@ -58,7 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('file_names', nargs='+')
     args = parser.parse_args()
 
-    row_parser_creator = create_row_parser(RowParser, int_timestamp)
+    row_parser_creator = create_row_parser(UniversalRowParser, int_timestamp)
     file_parser_creator = create_file_parser(row_parser_creator, SimpleRowGetter)
     parser = BaseParseContoller(args.pattern)
 
