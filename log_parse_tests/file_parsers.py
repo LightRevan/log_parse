@@ -30,7 +30,7 @@ class SingleLineFileParserTest(FileParserTest):
     def setUp(self):
         super(SingleLineFileParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp)
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp)
         row_getter_cls = SimpleRowGetter
         self.tested = SingleLineFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern)
 
@@ -70,7 +70,7 @@ class ContextFileParserTest(FileParserTest):
     def setUp(self):
         super(ContextFileParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp)
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp)
         row_getter_cls = SimpleRowGetter
         self.tested = SimpleContextFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern, context_size=3)
 
@@ -231,7 +231,7 @@ class ThreadCommonBufferParserTest(FileParserTest):
     def setUp(self):
         super(ThreadCommonBufferParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp, thread='T\d+')
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp, thread='T\d+')
         row_getter_cls = SimpleRowGetter
         self.tested = ThreadContextCommonBufferFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern, context_size=3)
 
@@ -298,7 +298,7 @@ class SingleThreadParserTest(FileParserTest):
     def setUp(self):
         super(SingleThreadParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp, thread='T\d+')
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp, thread='T\d+')
         row_getter_cls = SimpleRowGetter
         self.tested = SingleThreadContextFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern, context_size=3)
 
@@ -367,7 +367,7 @@ class MultiThreadParserTest(FileParserTest):
     def setUp(self):
         super(MultiThreadParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp, thread='T\d+')
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp, thread='T\d+')
         row_getter_cls = SimpleRowGetter
         self.tested = MultiThreadContextFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern, context_size=3)
 
@@ -478,7 +478,7 @@ class MultiThreadBlobParserTest(FileParserTest):
     def setUp(self):
         super(MultiThreadBlobParserTest, self).setUp()
 
-        row_parser_cls = create_row_parser(UniversalRowParser, timestamp=int_timestamp, thread='T\d+')
+        row_parser_cls = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp, thread='T\d+')
         row_getter_cls = SimpleRowGetter
         self.tested = MultiThreadBlobbingContextFileParser(row_parser_cls, row_getter_cls, self.fname, self.pattern, context_size=3)
 

@@ -46,7 +46,7 @@ class BaseParseContollerTestCase(unittest.TestCase):
         conc = lambda r: str(r[0]) + r[1]
         req_res = map(conc, zip(range(1, 16), ['a']*15))
 
-        row_parser_creator = create_row_parser(UniversalRowParser, timestamp=int_timestamp)
+        row_parser_creator = create_row_parser(MultiPatternRowParser, timestamp=int_timestamp)
         file_parser_creator = create_file_parser(SingleLineFileParser, row_parser_creator, SimpleRowGetter)
 
         self.tested.parse(self.fnames, file_parser_creator)

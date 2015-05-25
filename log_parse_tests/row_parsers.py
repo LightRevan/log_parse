@@ -7,7 +7,7 @@ from log_parse.row_parsers import *
 
 class MergingRowGetterTestCase(unittest.TestCase):
     def test_1(self):
-        row_parser = UniversalRowParser('.*', timestamp='^\d+')
+        row_parser = MultiPatternRowParser('.*', timestamp='^\d+')
         rows = ['2 a',
                 'cdf']
         tested = MergingRowGetter(iter(rows), row_parser)
@@ -16,7 +16,7 @@ class MergingRowGetterTestCase(unittest.TestCase):
         self.assertEqual(result, ['2 a\ncdf'])
 
     def test_2(self):
-        row_parser = UniversalRowParser('.*', timestamp='^\d+')
+        row_parser = MultiPatternRowParser('.*', timestamp='^\d+')
         rows = ['1 a',
                 '2 a',
                 'cdf',
@@ -27,9 +27,9 @@ class MergingRowGetterTestCase(unittest.TestCase):
         self.assertEqual(result, ['1 a', '2 a\ncdf', '3 a'])
 
 
-class SinglePatternThreadParserTestCase(unittest.TestCase):
+class SinglePatternParserTestCase(unittest.TestCase):
     def test_1(self):
-        tested = SinglePatternThreadParser('a', '^(\d+) (T\d+)')
+        tested = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')
         result = tested.parse_row('1 T1 a')
         required_result = {'match': 'a',
                            'timestamp': '1',

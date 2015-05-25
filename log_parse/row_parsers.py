@@ -3,9 +3,11 @@ __author__ = 'lightrevan'
 
 import re
 import functools
+import collections
 
 
 def create_row_parser(cls, **kwargs):
+    # TODO: get rid of that
     return functools.partial(cls, **kwargs)
 
 
@@ -28,7 +30,7 @@ class AbstractRowParser(object):
         raise NotImplemented
 
 
-class UniversalRowParser(AbstractRowParser):
+class MultiPatternRowParser(AbstractRowParser):
     def __init__(self, match_pattern, **kwargs):
         assert 'timestamp' in kwargs, 'Must have timestamp pattern in row parser'
 
@@ -53,17 +55,27 @@ class UniversalRowParser(AbstractRowParser):
         return res
 
 
-class SinglePatternThreadParser(AbstractRowParser):
-    def __init__(self, match_pattern, row_pattern, group_transform):
+class SinglePatternRowParser(AbstractRowParser):
+    def __init__(self, match_pattern, row_pattern, group_transforms=None):
         self._match_pattern = self._compile_pattern(match_pattern)
         self._row_pattern = self._compile_pattern(row_pattern)
+
+        if group_transforms is None:
+            self._group_transforms = {'timestamp': not_none_transform, 'thread': not_none_transform}
+        elif isinstance(group_transforms, dict):
+            self._group_transforms = group_transforms
+        else:
+            self._group_transforms = {name: not_none_transform for name in group_transforms}
 
     def parse_row(self, row):
         params_match = self._row_pattern.search(row)
         match = self._match_pattern.search(row)
-        return {'match': match.group(0) if match else None,
-                'timestamp': params_match.group(1),
-                'thread': params_match.group(2)}
+
+        res = {'match': match.group(0) if match else None}
+        for name, transform in self._group_transforms.items():
+            res[name] = transform(params_match.group(name))
+
+        return res
 
 
 class SimpleRowGetter(object):
