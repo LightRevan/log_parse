@@ -6,11 +6,6 @@ import functools
 import collections
 
 
-def create_row_parser(cls, **kwargs):
-    # TODO: get rid of that
-    return functools.partial(cls, **kwargs)
-
-
 def not_none_transform(match):
     if match is None:
         raise AttributeError
@@ -29,13 +24,16 @@ class AbstractRowParser(object):
     def parse_row(self, row):
         raise NotImplemented
 
+    def has_pattern(self, name):
+        raise NotImplemented
+
 
 class MultiPatternRowParser(AbstractRowParser):
     def __init__(self, match_pattern, **kwargs):
         assert 'timestamp' in kwargs, 'Must have timestamp pattern in row parser'
 
         match_pattern = match_pattern
-        self.patterns = {'match': (self._compile_pattern(match_pattern), lambda x: x)}
+        self._patterns = {'match': (self._compile_pattern(match_pattern), lambda x: x)}
         for name, data in kwargs.items():
             if isinstance(data, tuple):
                 pattern, transform = data
@@ -43,29 +41,30 @@ class MultiPatternRowParser(AbstractRowParser):
                 pattern = data
                 transform = not_none_transform
 
-            self.patterns[name] = (self._compile_pattern(pattern), transform)
+            self._patterns[name] = (self._compile_pattern(pattern), transform)
 
     def parse_row(self, row):
         res = {}
-        for name, data in self.patterns.items():
+        for name, data in self._patterns.items():
             pattern, transform = data
             match = pattern.search(row)
             res[name] = transform(match.group(0) if match else None)
 
         return res
 
+    def has_pattern(self, name):
+        return name in self._patterns
+
 
 class SinglePatternRowParser(AbstractRowParser):
     def __init__(self, match_pattern, row_pattern, group_transforms=None):
         self._match_pattern = self._compile_pattern(match_pattern)
         self._row_pattern = self._compile_pattern(row_pattern)
+        assert 'timestamp' in self._row_pattern.groupindex, 'Must have timestamp pattern in row parser'
 
-        if group_transforms is None:
-            self._group_transforms = {'timestamp': not_none_transform, 'thread': not_none_transform}
-        elif isinstance(group_transforms, dict):
-            self._group_transforms = group_transforms
-        else:
-            self._group_transforms = {name: not_none_transform for name in group_transforms}
+        self._group_transforms = {name: not_none_transform for name in self._row_pattern.groupindex}
+        if  group_transforms is not None:
+            self._group_transforms.update(group_transforms)
 
     def parse_row(self, row):
         params_match = self._row_pattern.search(row)
@@ -76,6 +75,9 @@ class SinglePatternRowParser(AbstractRowParser):
             res[name] = transform(params_match.group(name))
 
         return res
+
+    def has_pattern(self, name):
+        return name in self._row_pattern.groupindex
 
 
 class SimpleRowGetter(object):

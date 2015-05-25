@@ -102,7 +102,7 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
 class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
     def __init__(self, *args, **kwargs):
         super(ThreadContextCommonBufferFileParser, self).__init__(*args, **kwargs)
-        assert 'thread' in self._row_getter.row_parser.patterns, 'Row parser should be able to find threads'
+        assert self._row_getter.row_parser.has_pattern('thread'), 'Row parser should be able to find threads'
 
         self._looked_up_threads = {}
         self._current_row_number = 0
@@ -132,7 +132,7 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
         self._thread = kwargs.pop('thread', None)
 
         super(SingleThreadContextFileParser, self).__init__(*args, **kwargs)
-        assert 'thread' in self._row_getter.row_parser.patterns, 'Row parser should be able to find threads'
+        assert self._row_getter.row_parser.has_pattern('thread'), 'Row parser should be able to find threads'
 
     def _init_output(self, row_params):
         if self._thread is None or row_params['thread'] == self._thread:
@@ -197,7 +197,7 @@ class ThreadBuffer(object):
 class MultiThreadContextFileParser(ContextFileParser):
     def __init__(self, *args, **kwargs):
         super(MultiThreadContextFileParser, self).__init__(*args, **kwargs)
-        assert 'thread' in self._row_getter.row_parser.patterns, 'Row parser should be able to find threads'
+        assert self._row_getter.row_parser.has_pattern('thread'), 'Row parser should be able to find threads'
 
         self._thread_buffers = {}
         self._buffer_heap = []
