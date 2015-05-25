@@ -21,8 +21,8 @@ class FileParserDecorator(object):
         return cmp(self.timestamp, other.timestamp)
 
     def fetch(self):
-        self.timestamp, self.row, self.row_params = self.file_parser.next()
-
+        self.row, self.row_params = self.file_parser.next()
+        self.timestamp = self.row_params['timestamp']
 
 class BaseParseContoller(object):  # TODO: test this shit
     def __init__(self, pattern, output_method):

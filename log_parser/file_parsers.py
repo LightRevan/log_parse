@@ -31,8 +31,7 @@ class SingleLineFileParser(BaseFileParser):
         while True:
             row, row_parse_result = self._row_getter.next()
             if row_parse_result['match']:
-                timestamp = row_parse_result['timestamp']
-                return timestamp, row, row_parse_result
+                return row, row_parse_result
 
 
 class ContextFileParser(BaseFileParser):
@@ -92,11 +91,11 @@ class SimpleContextFileParser(ContextCommonBufferFileParser):
         self._pending_rows = len(self._buffer) + 1 + self._context_size
 
     def _add_to_buffer(self, row_params, row):
-        self._buffer.append((row_params['timestamp'], row, row_params))
+        self._buffer.append((row, row_params))
 
-    def _prepare_output(self, timestamp, row, row_params):
+    def _prepare_output(self, row, row_params):
         self._pending_rows -= 1
-        return timestamp, row, row_params
+        return row, row_params
 
 
 class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
@@ -113,17 +112,15 @@ class ThreadContextCommonBufferFileParser(ContextCommonBufferFileParser):
 
     def _add_to_buffer(self, row_params, row):
         self._buffer.append((self._current_row_number,
-                             row_params['timestamp'],
-                             row_params['thread'],
                              row,
                              row_params))
         self._current_row_number += 1
 
-    def _prepare_output(self, row_number, timestamp, thread, row, row_params):
+    def _prepare_output(self, row_number, row, row_params):
         self._pending_rows -= 1
-        thread_row_number = self._looked_up_threads.get(thread, None)
+        thread_row_number = self._looked_up_threads.get(row_params['thread'], None)
         if thread_row_number is not None and abs(thread_row_number-row_number) <= self._context_size:
-            return timestamp, row, row_params
+            return row, row_params
         return None
 
 
@@ -139,23 +136,20 @@ class SingleThreadContextFileParser(ContextCommonBufferFileParser):
             self._thread = row_params['thread']
 
             valid_rows_num = 0
-            for _, thread, _, _ in self._buffer:
-                if thread == self._thread:
+            for _, row_params in self._buffer:
+                if row_params['thread'] == self._thread:
                     valid_rows_num += 1
 
             self._pending_rows = valid_rows_num + 1 + self._context_size
 
     def _add_to_buffer(self, row_params, row):
         if self._thread is None or row_params['thread'] == self._thread:
-            self._buffer.append((row_params['timestamp'],
-                                 row_params['thread'],
-                                 row,
-                                 row_params))
+            self._buffer.append((row, row_params))
 
-    def _prepare_output(self, timestamp, thread, row, row_params):
-        if thread == self._thread:
+    def _prepare_output(self, row, row_params):
+        if row_params['thread'] == self._thread:
             self._pending_rows -= 1
-            return timestamp, row, row_params
+            return row, row_params
         return None
 
 
@@ -172,18 +166,18 @@ class ThreadBuffer(object):
     def output_ready(self):
         return len(self._buffer) and self._pending_rows
 
-    def push(self, timestamp, row, row_params):
+    def push(self, row, row_params):
         if self.timestamp is None:
-            self.timestamp = timestamp
+            self.timestamp = row_params['timestamp']
 
-        self._buffer.append((timestamp, row, row_params))
+        self._buffer.append((row, row_params))
         if not self._pending_rows and len(self._buffer) > self._context_size:
             self._buffer.popleft()
 
     def pop(self):
         buffer_elem = self._buffer.popleft()
 
-        self.timestamp = self._buffer[0][0] if len(self._buffer) else None
+        self.timestamp = self._buffer[0][1]['timestamp'] if len(self._buffer) else None
         self._pending_rows -= 1
 
         return buffer_elem
@@ -242,7 +236,7 @@ class MultiThreadContextFileParser(ContextFileParser):
                 was_not_ready = not thread_buffer.output_ready()
                 if row_params['match']:
                     thread_buffer.init_output()
-                thread_buffer.push(row_params['timestamp'], row, row_params)
+                thread_buffer.push(row, row_params)
                 is_ready = thread_buffer.output_ready()
 
                 self._process_buffer(thread_buffer, was_not_ready, is_ready)
