@@ -5,8 +5,8 @@ import re
 import functools
 
 
-def create_row_parser(cls, timestamp, **kwargs):
-    return functools.partial(cls, timestamp=timestamp, **kwargs)
+def create_row_parser(cls, **kwargs):
+    return functools.partial(cls, **kwargs)
 
 
 def not_none_transform(match):
@@ -20,18 +20,15 @@ int_timestamp = ('^\d+', lambda x: int(not_none_transform(x)))
 
 
 class AbstractRowParser(object):
-    def __init__(self, match_pattern, timestamp=None):
-        raise NotImplemented
+    @classmethod
+    def _compile_pattern(cls, pattern):
+        return pattern if isinstance(pattern, re._pattern_type) else re.compile(pattern)
 
     def parse_row(self, row):
         raise NotImplemented
 
 
 class UniversalRowParser(AbstractRowParser):
-    @classmethod
-    def _compile_pattern(cls, pattern):
-        return pattern if isinstance(pattern, re._pattern_type) else re.compile(pattern)
-
     def __init__(self, match_pattern, **kwargs):
         assert 'timestamp' in kwargs, 'Must have timestamp pattern in row parser'
 
@@ -56,24 +53,18 @@ class UniversalRowParser(AbstractRowParser):
         return res
 
 
-def param_transform(par_from, par_to):
-    def deco(f):
-        def wrap(*args, **kwargs):
-            timestamp = kwargs.pop(par_from)
-            kwargs[par_to] = timestamp
-            return f(*args, **kwargs)
-        return wrap
-    return deco
-
-
-class SinglePatterThreadParser(AbstractRowParser):
-    @param_transform('timestamp', 'row_pattern')
-    def __init__(self, match_pattern, row_pattern):
-        self.match_pattern = match_pattern
-        self.row_pattern = row_pattern
+class SinglePatternThreadParser(AbstractRowParser):
+    def __init__(self, match_pattern, row_pattern, group_transform):
+        self._match_pattern = self._compile_pattern(match_pattern)
+        self._row_pattern = self._compile_pattern(row_pattern)
 
     def parse_row(self, row):
-        pass
+        params_match = self._row_pattern.search(row)
+        match = self._match_pattern.search(row)
+        return {'match': match.group(0) if match else None,
+                'timestamp': params_match.group(1),
+                'thread': params_match.group(2)}
+
 
 class SimpleRowGetter(object):
     def __init__(self, f, row_parser):
