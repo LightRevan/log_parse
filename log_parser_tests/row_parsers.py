@@ -2,7 +2,7 @@
 __author__ = 'lightrevan'
 
 import unittest
-from log_parse.row_parsers import *
+from log_parser.row_parsers import *
 
 
 class MergingRowGetterTestCase(unittest.TestCase):

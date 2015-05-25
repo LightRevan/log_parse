@@ -5,8 +5,8 @@ import unittest
 import tempfile
 import os
 
-from log_parse.parse_controllers import *
-from log_parse.output_methods import *
+from log_parser.parse_controllers import *
+from log_parser.output_methods import *
 
 
 class BaseParseContollerTestCase(unittest.TestCase):
