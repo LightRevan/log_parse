@@ -110,7 +110,15 @@ class MergingRowGetter(SimpleRowGetter):
     def next(self):
         if self._next_row is None:
             row = self._f.next().strip()
-            params = self.row_parser.parse_row(row)
+            first_row = row
+            first_row_valid = False
+            while not first_row_valid:
+                try:
+                    params = self.row_parser.parse_row(first_row)
+                    first_row_valid = True
+                except AttributeError:
+                    first_row = self._f.next().strip()
+                    row += '\n' + first_row
         else:
             row, params = self._next_row, self._next_params
 

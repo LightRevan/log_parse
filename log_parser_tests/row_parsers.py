@@ -38,7 +38,7 @@ class SinglePatternParserTestCase(unittest.TestCase):
 
     def test_2(self):
         row_parser = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')
-        rows = ['aaa',
+        rows = ['bbb',
                 '1 T1 a',
                 '2 T1 a',
                 'cdf',
@@ -46,7 +46,18 @@ class SinglePatternParserTestCase(unittest.TestCase):
         tested = MergingRowGetter(iter(rows), row_parser)
 
         result = [row for row, _ in tested]
-        self.assertEqual(result, ['1 T1 a', '2 T1 a\ncdf', '3 T1 a'])
+        self.assertEqual(result, ['bbb\n1 T1 a', '2 T1 a\ncdf', '3 T1 a'])
+
+    def test_3(self):
+        row_parser = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')
+        rows = ['bbb',
+                '1 T1 a',
+                'cdf',
+                '3 T1 a']
+        tested = MergingRowGetter(iter(rows), row_parser)
+
+        result = [row for row, _ in tested]
+        self.assertEqual(result, ['bbb\n1 T1 a\ncdf', '3 T1 a'])
 
 
 if __name__ == '__main__':
