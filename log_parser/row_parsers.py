@@ -7,17 +7,20 @@ import collections
 import datetime as dt
 
 
+class RowParsingError(LookupError):
+    pass
+
+
 def not_none_transform(match):
     if match is None:
-        #  TODO: find some better way to show that matching failed
-        raise AttributeError
+        raise RowParsingError
     else:
         return match
 
 
 def date_transform(match):
     if match is None:
-        raise AttributeError
+        raise RowParsingError
     else:
         return dt.datetime.strptime(match, '%y-%m-%d %H:%M:%S,%f')
 
@@ -80,7 +83,7 @@ class SinglePatternRowParser(AbstractRowParser):
 
         res = {'match': match.group(0) if match else None}
         for name, transform in self._group_transforms.items():
-            res[name] = transform(params_match.group(name))
+            res[name] = transform(params_match.group(name) if params_match else None)
 
         return res
 
@@ -117,7 +120,7 @@ class MergingRowGetter(SimpleRowGetter):
                 try:
                     params = self.row_parser.parse_row(first_row)
                     first_row_valid = True
-                except AttributeError:
+                except RowParsingError:
                     first_row = self._f.next().strip()
                     row += '\n' + first_row
         else:
@@ -134,7 +137,7 @@ class MergingRowGetter(SimpleRowGetter):
                     next_row_valid = True
                     self._next_row = next_row
                     self._next_params = next_params
-                except AttributeError:
+                except RowParsingError:
                     row += '\n' + next_row
         except StopIteration:
             pass
