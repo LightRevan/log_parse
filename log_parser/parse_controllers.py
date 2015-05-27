@@ -6,6 +6,7 @@ import heapq
 
 from file_parsers import *
 from row_parsers import *
+from output_methods import *
 
 
 class FileParserDecorator(object):
@@ -25,7 +26,7 @@ class FileParserDecorator(object):
         self.timestamp = self.row_params['timestamp']
 
 class BaseParseContoller(object):  # TODO: test this shit
-    def __init__(self, pattern, output_method):
+    def __init__(self, pattern, output_method=print_output):
         self.pattern = re.compile(pattern)
         self.output_method = output_method
 
@@ -58,8 +59,11 @@ if __name__ == '__main__':
     parser.add_argument('file_names', nargs='+')
     args = parser.parse_args()
 
-    row_parser_creator = functools.partial(MultiPatternRowParser, timestamp=int_timestamp)
-    file_parser_creator = create_file_parser(row_parser_creator, SimpleRowGetter)
+    row_pattern = '^(?P<timestamp>[0-9\-]{8} [0-9:,]+) (?P<thread>(?:P\d+ )?T\d+)'
+    transforms = {'timestamp': date_transform}
+    row_parser_creator = functools.partial(SinglePatternRowParser, row_pattern=row_pattern, group_transforms=transforms)
+    file_parser_creator = create_file_parser(row_parser_creator, MergingRowGetter)
+
     parser = BaseParseContoller(args.pattern)
 
     parser.parse(args.file_names, file_parser_creator)

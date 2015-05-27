@@ -4,6 +4,7 @@ __author__ = 'lightrevan'
 import re
 import functools
 import collections
+import datetime as dt
 
 
 def not_none_transform(match):
@@ -12,6 +13,12 @@ def not_none_transform(match):
     else:
         return match
 
+
+def date_transform(match):
+    if match is None:
+        raise AttributeError
+    else:
+        return dt.datetime.strptime(match, '%y-%m-%d %H:%M:%S,%f')
 
 int_timestamp = ('^\d+', lambda x: int(not_none_transform(x)))
 
