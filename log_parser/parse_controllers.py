@@ -62,7 +62,8 @@ if __name__ == '__main__':
     row_pattern = '^(?P<timestamp>[0-9\-]{8} [0-9:,]+) (?P<thread>(?:P\d+ )?T\d+)'
     transforms = {'timestamp': date_transform}
     row_parser_creator = functools.partial(SinglePatternRowParser, row_pattern=row_pattern, group_transforms=transforms)
-    file_parser_creator = create_file_parser(row_parser_creator, MergingRowGetter)
+    file_parser_creator = create_file_parser(MultiThreadBlobbingContextFileParser,
+                                             row_parser_creator, MergingRowGetter, context_size=100)
 
     parser = BaseParseContoller(args.pattern)
 

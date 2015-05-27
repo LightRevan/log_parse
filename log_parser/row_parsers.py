@@ -70,7 +70,7 @@ class SinglePatternRowParser(AbstractRowParser):
         assert 'timestamp' in self._row_pattern.groupindex, 'Must have timestamp pattern in row parser'
 
         self._group_transforms = {name: not_none_transform for name in self._row_pattern.groupindex}
-        if  group_transforms is not None:
+        if group_transforms is not None:
             self._group_transforms.update(group_transforms)
 
     def parse_row(self, row):

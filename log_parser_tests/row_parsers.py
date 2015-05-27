@@ -36,6 +36,18 @@ class SinglePatternParserTestCase(unittest.TestCase):
                            'thread': 'T1'}
         self.assertEqual(result, required_result)
 
+    def test_2(self):
+        row_parser = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')
+        rows = ['aaa',
+                '1 T1 a',
+                '2 T1 a',
+                'cdf',
+                '3 T1 a']
+        tested = MergingRowGetter(iter(rows), row_parser)
+
+        result = [row for row, _ in tested]
+        self.assertEqual(result, ['1 T1 a', '2 T1 a\ncdf', '3 T1 a'])
+
 
 if __name__ == '__main__':
     unittest.main()
