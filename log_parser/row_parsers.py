@@ -9,6 +9,7 @@ import datetime as dt
 
 def not_none_transform(match):
     if match is None:
+        #  TODO: find some better way to show that matching failed
         raise AttributeError
     else:
         return match
