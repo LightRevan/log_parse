@@ -35,6 +35,9 @@ class AbstractRowParser(object):
     def parse_row(self, row):
         raise NotImplemented
 
+    def check_match(self, row):
+        raise NotImplemented
+
     def has_pattern(self, name):
         raise NotImplemented
 
@@ -63,6 +66,11 @@ class MultiPatternRowParser(AbstractRowParser):
 
         return res
 
+    def check_match(self, row):
+        pattern, transform = self._patterns['match']
+        match = pattern.search(row)
+        return transform(match.group(0) if match else None)
+
     def has_pattern(self, name):
         return name in self._patterns
 
@@ -86,6 +94,10 @@ class SinglePatternRowParser(AbstractRowParser):
             res[name] = transform(params_match.group(name) if params_match else None)
 
         return res
+
+    def check_match(self, row):
+        match = self._match_pattern.search(row)
+        return match.group(0) if match else None
 
     def has_pattern(self, name):
         return name in self._row_pattern.groupindex
@@ -112,33 +124,41 @@ class MergingRowGetter(SimpleRowGetter):
         self._next_params = None
 
     def next(self):
+        # TODO: try to unify first and subsequent row mergings
         if self._next_row is None:
-            row = self._f.next().strip()
+            row = self._f.next().strip(' \n')
             first_row = row
             first_row_valid = False
             while not first_row_valid:
                 try:
                     params = self.row_parser.parse_row(first_row)
                     first_row_valid = True
+                    if first_row != row:
+                        params['match'] = self.row_parser.check_match(row)
                 except RowParsingError:
-                    first_row = self._f.next().strip()
+                    first_row = self._f.next().strip(' \n')
                     row += '\n' + first_row
         else:
             row, params = self._next_row, self._next_params
 
         try:
             next_row_valid = False
+            need_recheck = False
             self._next_row = None
             while not next_row_valid:
-                next_row = self._f.next()
+                next_row = self._f.next().strip(' \n')
                 try:
                     next_params = self.row_parser.parse_row(next_row)
-
                     next_row_valid = True
+
                     self._next_row = next_row
                     self._next_params = next_params
                 except RowParsingError:
                     row += '\n' + next_row
+                    need_recheck = True
+                finally:
+                    if need_recheck:
+                        params['match'] = self.row_parser.check_match(row)
         except StopIteration:
             pass
 

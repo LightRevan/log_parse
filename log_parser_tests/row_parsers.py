@@ -4,6 +4,9 @@ __author__ = 'lightrevan'
 import unittest
 from log_parser.row_parsers import *
 
+# TODO: add full test for all combinations of row parsers and row getters
+# TODO: add tests for match not in first row
+
 
 class MergingRowGetterTestCase(unittest.TestCase):
     def test_1(self):
@@ -58,6 +61,17 @@ class SinglePatternParserTestCase(unittest.TestCase):
 
         result = [row for row, _ in tested]
         self.assertEqual(result, ['bbb\n1 T1 a\ncdf', '3 T1 a'])
+
+    def test_4(self):
+        row_parser = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')
+        rows = ['1 T1 a',
+                'cdf',
+                '2 T1 b',
+                'acdf']
+        tested = MergingRowGetter(iter(rows), row_parser)
+
+        result = [row for row, _ in tested]
+        self.assertEqual(result, ['1 T1 a\ncdf', '2 T1 b\nacdf'])
 
 
 if __name__ == '__main__':
