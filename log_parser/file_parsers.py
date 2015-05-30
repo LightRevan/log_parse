@@ -3,11 +3,6 @@ __author__ = 'lightrevan'
 
 import collections
 import heapq
-import functools
-
-
-def create_file_parser(file_parser_cls, row_parser_cls, row_getter_cls, **kwargs):
-    return functools.partial(file_parser_cls, row_parser_cls, row_getter_cls, **kwargs)
 
 
 class BaseFileParser(object):

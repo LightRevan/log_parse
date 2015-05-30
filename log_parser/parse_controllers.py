@@ -32,9 +32,9 @@ class BaseParseContoller(object):
 
     def parse(self, files, create_file_parser, create_row_parser, create_row_getter):
         parsers = []
-        for file in files:
+        for f in files:
             row_parser = create_row_parser(self.pattern)
-            row_getter = create_row_getter(file, row_parser)
+            row_getter = create_row_getter(f, row_parser)
             file_parser = create_file_parser(row_getter)
 
             decorator = FileParserDecorator(file_parser)
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     transforms = {'timestamp': date_transform}
     row_parser_creator = functools.partial(SinglePatternRowParser, row_pattern=row_pattern, group_transforms=transforms)
     row_getter_creator = MergingRowGetter
-    file_parser_creator = create_file_parser(MultiThreadBlobbingContextFileParser, context_size=100)
+    file_parser_creator = functools.partial(MultiThreadBlobbingContextFileParser, context_size=100)
 
     parser = BaseParseContoller(args.pattern)
 

@@ -12,3 +12,12 @@ class RowGetterStub(object):
 
     def next(self):
         return self.data.next()
+
+def create_row_parser_stub(*args):
+    pass
+
+def create_row_getter_stub(file, *args):
+    return file
+
+def create_file_parser_stub(file):
+    return iter(file)
