@@ -11,13 +11,8 @@ def create_file_parser(file_parser_cls, row_parser_cls, row_getter_cls, **kwargs
 
 
 class BaseFileParser(object):
-    def __init__(self, row_parser_cls, row_getter_cls, file_name, pattern):
-        self._file = open(file_name, 'r')
-        row_parser = row_parser_cls(pattern)
-        self._row_getter = row_getter_cls(self._file, row_parser)
-
-    def __del__(self):
-        self._file.close()
+    def __init__(self, row_getter):
+        self._row_getter = row_getter
 
     def __iter__(self):
         return self

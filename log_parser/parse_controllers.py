@@ -25,15 +25,18 @@ class FileParserDecorator(object):
         self.row, self.row_params = self.file_parser.next()
         self.timestamp = self.row_params['timestamp']
 
-class BaseParseContoller(object):  # TODO: test this shit
+class BaseParseContoller(object):
     def __init__(self, pattern, output_method=print_output):
         self.pattern = re.compile(pattern)
         self.output_method = output_method
 
-    def parse(self, file_names, create_parser):
+    def parse(self, files, create_file_parser, create_row_parser, create_row_getter):
         parsers = []
-        for file_name in file_names:
-            file_parser = create_parser(file_name, self.pattern)
+        for file in files:
+            row_parser = create_row_parser(self.pattern)
+            row_getter = create_row_getter(file, row_parser)
+            file_parser = create_file_parser(row_getter)
+
             decorator = FileParserDecorator(file_parser)
             decorator.fetch()
             parsers.append(decorator)
@@ -62,9 +65,9 @@ if __name__ == '__main__':
     row_pattern = '^(?P<timestamp>[0-9\-]{8} [0-9:,]+) (?P<thread>(?:P\d+ )?T\d+)'
     transforms = {'timestamp': date_transform}
     row_parser_creator = functools.partial(SinglePatternRowParser, row_pattern=row_pattern, group_transforms=transforms)
-    file_parser_creator = create_file_parser(MultiThreadBlobbingContextFileParser,
-                                             row_parser_creator, MergingRowGetter, context_size=100)
+    row_getter_creator = MergingRowGetter
+    file_parser_creator = create_file_parser(MultiThreadBlobbingContextFileParser, context_size=100)
 
     parser = BaseParseContoller(args.pattern)
 
-    parser.parse(args.file_names, file_parser_creator)
+    parser.parse(args.file_names, file_parser_creator, row_parser_creator, row_getter_creator)
