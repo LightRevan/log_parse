@@ -76,6 +76,7 @@ class MergingGetterAbstractParserTestCase(object):
         required_result = [('bbb\naaa\n1 T1 b', {'timestamp': '1', 'thread': 'T1', 'match': 'a'})]
         self.assertEqual(result, required_result)
 
+
 class MergingGetterSingleParserTestCase(unittest.TestCase, MergingGetterAbstractParserTestCase):
     def setUp(self):
         self.row_parser = SinglePatternRowParser('a', '^(?P<timestamp>\d+) (?P<thread>T\d+)')

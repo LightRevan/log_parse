@@ -119,42 +119,39 @@ class MergingRowGetter(SimpleRowGetter):
         self._next_params = None
 
     def next(self):
-        # TODO: try to unify first and subsequent row mergings
         if self._next_row is None:
-            row = self._f.next().strip(' \n')
-            first_row = row
-            first_row_valid = False
-            while not first_row_valid:
-                try:
-                    params = self.row_parser.parse_row(first_row)
-                    first_row_valid = True
-                    if first_row != row:
-                        params['match'] = self.row_parser.check_match(row)
-                except RowParsingError:
-                    first_row = self._f.next().strip(' \n')
-                    row += '\n' + first_row
+            row, params = '', None
+            searching_next = False
         else:
             row, params = self._next_row, self._next_params
-
-        try:
-            next_row_valid = False
-            need_recheck = False
             self._next_row = None
-            while not next_row_valid:
-                next_row = self._f.next().strip(' \n')
-                try:
-                    next_params = self.row_parser.parse_row(next_row)
-                    next_row_valid = True
+            searching_next = True
 
-                    self._next_row = next_row
-                    self._next_params = next_params
+        need_recheck = False
+        row_valid = False
+        try:
+            parse_row = self._f.next().strip(' \n')
+            while not row_valid:
+                try:
+                    parse_params = self.row_parser.parse_row(parse_row)
+                    if searching_next:
+                        self._next_row = parse_row
+                        self._next_params = parse_params
+                        row_valid = True
+                    else:
+                        row += ('\n' if row else '') + parse_row
+                        params = parse_params
+                        parse_row = self._f.next().strip(' \n')
+                        searching_next = True
                 except RowParsingError:
-                    row += '\n' + next_row
+                    row += ('\n' if row else '') + parse_row
+                    parse_row = self._f.next().strip(' \n')
                     need_recheck = True
-                finally:
-                    if need_recheck:
-                        params['match'] = self.row_parser.check_match(row)
-        except StopIteration:
-            pass
+        except StopIteration as e:
+            if self._next_row is None and not row:
+                raise e
+        finally:
+            if need_recheck:
+                params['match'] = self.row_parser.check_match(row)
 
         return row, params
