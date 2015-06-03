@@ -18,12 +18,7 @@ def not_none_transform(match):
         return match
 
 
-def date_transform(match):
-    if match is None:
-        raise RowParsingError
-    else:
-        return dt.datetime.strptime(match, '%y-%m-%d %H:%M:%S,%f')
-
+date_transform = lambda match: dt.datetime.strptime(not_none_transform(match), '%y-%m-%d %H:%M:%S,%f')
 int_timestamp = ('^\d+', lambda x: int(not_none_transform(x)))
 
 

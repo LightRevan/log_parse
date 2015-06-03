@@ -251,6 +251,74 @@ class ThreadCommonBufferParserTest(unittest.TestCase):
         self.assertEqual(results, required_results)
 
 
+class ThreadCommonBufferParserTestThickMatches(unittest.TestCase):
+    def setUp(self):
+        data = [('1 T1 a', {'timestamp': 1, 'match': None, 'thread': 'T1'}),
+                ('2 T1 b', {'timestamp': 2, 'match': None, 'thread': 'T1'}),
+                ('3 T1 c', {'timestamp': 3, 'match': None, 'thread': 'T1'}),
+                ('4 T1 d', {'timestamp': 4, 'match': None, 'thread': 'T1'}),
+                ('5 T1 abcd', {'timestamp': 5, 'match': 'abcd', 'thread': 'T1'}),
+                ('6 T1 e', {'timestamp': 6, 'match': None, 'thread': 'T1'}),
+                ('7 T1 abcd', {'timestamp': 7, 'match': 'abcd', 'thread': 'T1'}),
+                ('8 T2 a', {'timestamp': 8, 'match': None, 'thread': 'T2'}),
+                ('9 T2 a', {'timestamp': 9, 'match': None, 'thread': 'T2'}),
+                ('10 T1 a', {'timestamp': 10, 'match': None, 'thread': 'T1'}),
+                ('11 T2 abcd', {'timestamp': 11, 'match': 'abcd', 'thread': 'T2'})]
+
+        self.tested = ThreadContextCommonBufferFileParser(RowGetterStub(data), context_size=3)
+
+    def test_parsing_c3(self):
+        self.tested.set_context_size(3)
+        results = [(row_params['timestamp'], row) for row, row_params in self.tested]
+        required_results = [(2, '2 T1 b'),
+                            (3, '3 T1 c'),
+                            (4, '4 T1 d'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (7, '7 T1 abcd'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c4(self):
+        self.tested.set_context_size(4)
+        results = [(row_params['timestamp'], row) for row, row_params in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (3, '3 T1 c'),
+                            (4, '4 T1 d'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (7, '7 T1 abcd'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+    def test_parsing_c5(self):
+        self.tested.set_context_size(5)
+        results = [(row_params['timestamp'], row) for row, row_params in self.tested]
+        required_results = [(1, '1 T1 a'),
+                            (2, '2 T1 b'),
+                            (3, '3 T1 c'),
+                            (4, '4 T1 d'),
+                            (5, '5 T1 abcd'),
+                            (6, '6 T1 e'),
+                            (7, '7 T1 abcd'),
+                            (8, '8 T2 a'),
+                            (9, '9 T2 a'),
+                            (10, '10 T1 a'),
+                            (11, '11 T2 abcd')]
+
+        self.assertEqual(results, required_results)
+
+
+
 class SingleThreadParserTest(unittest.TestCase):
     def setUp(self):
         data = [('1 T1 a', {'timestamp': 1, 'match': None, 'thread': 'T1'}),
