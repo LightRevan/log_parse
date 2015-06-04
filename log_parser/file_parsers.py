@@ -13,7 +13,7 @@ class BaseFileParser(object):
         return self
 
     def next(self):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class SingleLineFileParser(BaseFileParser):

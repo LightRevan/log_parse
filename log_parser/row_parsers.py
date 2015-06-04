@@ -28,13 +28,13 @@ class AbstractRowParser(object):
         return pattern if isinstance(pattern, re._pattern_type) else re.compile(pattern)
 
     def parse_row(self, row):
-        raise NotImplemented
+        raise NotImplementedError
 
     def check_match(self, row):
-        raise NotImplemented
+        raise NotImplementedError
 
     def has_pattern(self, name):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class MultiPatternRowParser(AbstractRowParser):
