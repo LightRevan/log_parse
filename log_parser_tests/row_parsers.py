@@ -112,6 +112,18 @@ class SinglePatternParserTestCase(unittest.TestCase):
             self.tested.parse_row('abc')
 
 
+class SinglePatternParserMultilineTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tested = SinglePatternRowParser(re.compile('ab.*cd', re.M | re.S), '^(?P<timestamp>\d+) (?P<thread>T\d+)')
+
+    def test_1(self):
+        result = self.tested.parse_row('1 T1 ab\ndrdrdrcd')
+        required_result = {'match': 'ab\ndrdrdrcd',
+                           'timestamp': '1',
+                           'thread': 'T1'}
+        self.assertEqual(result, required_result)
+
+
 class MultiPatternParserTestCase(unittest.TestCase):
     def setUp(self):
         self.tested = MultiPatternRowParser('a', timestamp='^\d+', thread='T\d+')
@@ -134,6 +146,17 @@ class MultiPatternParserTestCase(unittest.TestCase):
         with self.assertRaises(RowParsingError):
             self.tested.parse_row('abc')
 
+
+class MultiPatternParserMultilineTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tested = MultiPatternRowParser(re.compile('ab.*cd', re.M | re.S), timestamp='^\d+', thread='T\d+')
+
+    def test_1(self):
+        result = self.tested.parse_row('1 T1 ab\ndrdrdrcd')
+        required_result = {'match': 'ab\ndrdrdrcd',
+                           'timestamp': '1',
+                           'thread': 'T1'}
+        self.assertEqual(result, required_result)
 
 if __name__ == '__main__':
     unittest.main()
