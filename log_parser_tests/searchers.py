@@ -5,7 +5,7 @@ import unittest
 from log_parser.queries import *
 
 
-class SQLQueryTestCase(unittest.TestCase):
+class SQLSearcherTestCase(unittest.TestCase):
     def test_1(self):
         input = [('1 T1 asdasdsad', {'timestamp': 1, 'thread': 'T1', 'match': None}),
                  ('2 T1 asdasdsad', {'timestamp': 2, 'thread': 'T1', 'match': None}),
