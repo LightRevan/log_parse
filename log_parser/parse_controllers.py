@@ -53,6 +53,8 @@ class BaseParseContoller(object):
                 pass
 
     def output(self, row, row_params):
+        # TODO: need to save information about what file produced what row
+        # TODO: to separate by threads AND files later
         self.output_method(row, row_params)
 
 
