@@ -2,7 +2,7 @@
 
 import unittest
 
-from log_parser.queries import *
+from log_parser.searchers import *
 
 
 class SQLSearcherTestCase(unittest.TestCase):
