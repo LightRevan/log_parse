@@ -24,7 +24,7 @@ class FileParserDecorator(object):
         self.row, self.row_params = self.file_parser.next()
         self.timestamp = self.row_params['timestamp']
 
-class BaseParseContoller(object):
+class BaseParseOutputMerger(object):
     def __init__(self, pattern):
         self.pattern = re.compile(pattern)
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     row_getter_creator = MergingRowGetter
     file_parser_creator = functools.partial(MultiThreadBlobbingContextFileParser, context_size=100)
 
-    parser = BaseParseContoller(args.pattern)
+    parser = BaseParseOutputMerger(args.pattern)
 
     for row, row_params in parser.parse(args.file_names, file_parser_creator, row_parser_creator, row_getter_creator):
         print row
