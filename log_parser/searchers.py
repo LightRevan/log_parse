@@ -80,7 +80,7 @@ class SimpleSQLSearchQuery(AbstractSearchQuery):
     def __init__(self, instance_cls, param_name=None):
         super(SimpleSQLSearchQuery, self).__init__(instance_cls)
         self._sql_pattern = re.compile('delete|update.*set|insert.*into|select.*from', re.I)
-        self._param_name = '\w*' if param_name is None else param_name
+        self._param_name = '\w+' if param_name is None else param_name
 
     def can_start(self, row, row_params):
         return self._sql_pattern.search(row) is not None
@@ -93,18 +93,23 @@ class SimpleSQLSearchInstance(AbstractSearchInstance):
     def __init__(self, param_name, found_sql):
         self._output_buffer = collections.deque()
         self._param_name = param_name
+        self._param_row_pattern = re.compile(r"{'\w+':.*}")
         self._found_sql = found_sql
+        self._is_finished = False
 
     def process_row(self, row, row_params):
         if row_params['match']:
+            self._is_finished = True
             param_pattern = re.compile(r"{.*'%s': ?%s.*}" % (self._param_name, row_params['match']))
 
             if param_pattern.search(row):
                 self._output_buffer.append(self._found_sql)
                 self._output_buffer.append(row)
+        elif self._param_row_pattern.search(row):
+            self._is_finished = True
 
     def finished(self):
-        return len(self._output_buffer) > 0
+        return self._is_finished
 
     def get_output(self):
         return self._output_buffer
