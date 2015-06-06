@@ -35,7 +35,6 @@ class SimpleSearcher(object):
         self._output_buffer = collections.deque()
         self._instances = {}
         self._queries = queries
-        self._input_empty = False
 
     def __iter__(self):
         return self
@@ -44,36 +43,48 @@ class SimpleSearcher(object):
         while True:
             try:
                 row, row_params = self._data.next()
-                thread = row_params['thread']
+            except StopIteration as stop:
+                output = self._get_output()
+                if output:
+                    return output
+                else:
+                    raise stop
 
-                thread_instances = self._instances.get(thread, None)
-                if thread_instances is None:
-                    thread_instances = []
-                    self._instances[thread] = thread_instances
+            thread = row_params['thread']
 
-                for instance in thread_instances:
-                    instance.process_row(row, row_params)
+            thread_instances = self._instances.get(thread, None)
+            if thread_instances is None:
+                thread_instances = []
+                self._instances[thread] = thread_instances
 
-                for query in self._queries:
-                    if query.can_start(row, row_params):
-                        thread_instances.append(query.create_instance(row, row_params))
+            for instance in thread_instances:
+                instance.process_row(row, row_params)
 
-                finished_instances = []
-                for instance in thread_instances:
-                    if instance.finished():
-                        self._output_buffer.extend(instance.get_output())
-                        finished_instances.append(instance)
+            for query in self._queries:
+                if query.can_start(row, row_params):
+                    thread_instances.append(query.create_instance(row, row_params))
 
-                for instance in finished_instances:
-                    thread_instances.remove(instance)
-            except StopIteration:
-                self._input_empty = True
-                pass
+            finished_instances = []
+            for instance in thread_instances:
+                if instance.finished():
+                    self._prepare_output(instance)
+                    finished_instances.append(instance)
 
-            if self._output_buffer:
-                return self._output_buffer.popleft()
-            elif self._input_empty:
-                raise StopIteration
+            for instance in finished_instances:
+                thread_instances.remove(instance)
+
+            output = self._get_output()
+            if output:
+                return output
+
+    def _prepare_output(self, instance):
+        self._output_buffer.extend(instance.get_output())
+
+    def _get_output(self):
+        if self._output_buffer:
+            return self._output_buffer.popleft()
+        else:
+            return None
 
 
 class SimpleSQLSearchQuery(AbstractSearchQuery):

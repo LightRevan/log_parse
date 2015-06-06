@@ -8,7 +8,7 @@ import re
 
 from log_parser.file_parsers import *
 from log_parser.row_parsers import *
-from mocks_and_stubs import *
+from log_parser_tests.mocks_and_stubs import *
 
 
 class SingleLineFileParserTest(unittest.TestCase):

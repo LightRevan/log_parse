@@ -6,7 +6,6 @@ import heapq
 
 from file_parsers import *
 from row_parsers import *
-from output_methods import *
 
 
 class FileParserDecorator(object):
@@ -26,16 +25,15 @@ class FileParserDecorator(object):
         self.timestamp = self.row_params['timestamp']
 
 class BaseParseContoller(object):
-    def __init__(self, pattern, output_method=print_output):
+    def __init__(self, pattern):
         self.pattern = re.compile(pattern)
-        self.output_method = output_method
 
-    def parse(self, files, create_file_parser, create_row_parser, create_row_getter):
+    def parse(self, files, file_parser_cls, row_parser_cls, row_getter_cls):
         parsers = []
         for f in files:
-            row_parser = create_row_parser(self.pattern)
-            row_getter = create_row_getter(f, row_parser)
-            file_parser = create_file_parser(row_getter)
+            row_parser = row_parser_cls(self.pattern)
+            row_getter = row_getter_cls(f, row_parser)
+            file_parser = file_parser_cls(row_getter)
 
             decorator = FileParserDecorator(file_parser)
             decorator.fetch()
@@ -46,7 +44,7 @@ class BaseParseContoller(object):
             decorator = heapq.heappop(parsers)
 
             try:
-                self.output(decorator.row, decorator.row_params)
+                yield self.output(decorator.row, decorator.row_params)
                 decorator.fetch()
                 heapq.heappush(parsers, decorator)
             except StopIteration:
@@ -55,7 +53,7 @@ class BaseParseContoller(object):
     def output(self, row, row_params):
         # TODO: need to save information about what file produced what row
         # TODO: to separate by threads AND files later
-        self.output_method(row, row_params)
+        return (row, row_params)
 
 
 if __name__ == '__main__':
@@ -72,4 +70,5 @@ if __name__ == '__main__':
 
     parser = BaseParseContoller(args.pattern)
 
-    parser.parse(args.file_names, file_parser_creator, row_parser_creator, row_getter_creator)
+    for row, row_params in parser.parse(args.file_names, file_parser_creator, row_parser_creator, row_getter_creator):
+        print row
