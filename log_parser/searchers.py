@@ -33,7 +33,7 @@ class SimpleSearcher(object):
     def __init__(self, data, queries):
         self._data = data
         self._output_buffer = collections.deque()
-        self._instances = {}
+        self._instances = collections.defaultdict(list)
         self._queries = queries
 
     def __iter__(self):
@@ -51,11 +51,7 @@ class SimpleSearcher(object):
                     raise stop
 
             thread = row_params['thread']
-
-            thread_instances = self._instances.get(thread, None)
-            if thread_instances is None:
-                thread_instances = []
-                self._instances[thread] = thread_instances
+            thread_instances = self._instances[thread]
 
             for instance in thread_instances:
                 instance.process_row(row, row_params)
